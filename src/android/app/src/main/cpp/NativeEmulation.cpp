@@ -281,6 +281,11 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulation_setSurface(JNIEnv* env, [[ma
 			ANativeWindow_release(static_cast<ANativeWindow*>(oldWindow));
 		auto newSurface = ANativeWindow_fromSurface(env, surface);
 		ANativeWindow_acquire(newSurface);
+#if __ANDROID_API__ >= 30
+		// Wii U games run at 60 (or 30) fps: ask the display to pick 60 Hz or a multiple of it instead of an unrelated refresh rate
+		if (newSurface != nullptr)
+			ANativeWindow_setFrameRate(newSurface, 60.0f, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+#endif
 		windowHandleInfo.surface = newSurface;
 		windowHandleInfo.surface.notify_all();
 	});

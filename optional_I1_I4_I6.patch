@@ -1,0 +1,70 @@
+diff --git a/src/android/app/src/main/AndroidManifest.xml b/src/android/app/src/main/AndroidManifest.xml
+index 0cb9fba..a7ec3dd 100644
+--- a/src/android/app/src/main/AndroidManifest.xml
++++ b/src/android/app/src/main/AndroidManifest.xml
+@@ -21,6 +21,9 @@
+         android:roundIcon="@mipmap/ic_launcher_round"
+         android:supportsRtl="true"
+         android:theme="@style/Theme.Cemu">
++        <meta-data
++            android:name="android.game_mode_config"
++            android:resource="@xml/game_mode_config" />
+         <activity
+             android:name=".MainActivity"
+             android:exported="true">
+diff --git a/src/android/app/src/main/cpp/NativeEmulation.cpp b/src/android/app/src/main/cpp/NativeEmulation.cpp
+index 82c1117..a827fba 100644
+--- a/src/android/app/src/main/cpp/NativeEmulation.cpp
++++ b/src/android/app/src/main/cpp/NativeEmulation.cpp
+@@ -281,6 +281,11 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulation_setSurface(JNIEnv* env, [[ma
+ 			ANativeWindow_release(static_cast<ANativeWindow*>(oldWindow));
+ 		auto newSurface = ANativeWindow_fromSurface(env, surface);
+ 		ANativeWindow_acquire(newSurface);
++#if __ANDROID_API__ >= 30
++		// Wii U games run at 60 (or 30) fps: ask the display to pick 60 Hz or a multiple of it instead of an unrelated refresh rate
++		if (newSurface != nullptr)
++			ANativeWindow_setFrameRate(newSurface, 60.0f, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
++#endif
+ 		windowHandleInfo.surface = newSurface;
+ 		windowHandleInfo.surface.notify_all();
+ 	});
+diff --git a/src/android/app/src/main/java/info/cemu/cemu/emulation/CanvasOnTouchListener.kt b/src/android/app/src/main/java/info/cemu/cemu/emulation/CanvasOnTouchListener.kt
+index 2b90ba4..53d6875 100644
+--- a/src/android/app/src/main/java/info/cemu/cemu/emulation/CanvasOnTouchListener.kt
++++ b/src/android/app/src/main/java/info/cemu/cemu/emulation/CanvasOnTouchListener.kt
+@@ -15,6 +15,8 @@ class CanvasOnTouchListener(val isTV: Boolean) : View.OnTouchListener {
+         when (event.actionMasked) {
+             MotionEvent.ACTION_DOWN -> {
+                 // a new gesture always starts here, even if a previous one was never closed
++                // deliver the events of this gesture as soon as they are available instead of batching them per frame
++                v.requestUnbufferedDispatch(event)
+                 return startTracking(event)
+             }
+ 
+diff --git a/src/android/app/src/main/java/info/cemu/cemu/emulation/inputoverlay/InputOverlaySurfaceView.kt b/src/android/app/src/main/java/info/cemu/cemu/emulation/inputoverlay/InputOverlaySurfaceView.kt
+index 75c0385..4355f69 100644
+--- a/src/android/app/src/main/java/info/cemu/cemu/emulation/inputoverlay/InputOverlaySurfaceView.kt
++++ b/src/android/app/src/main/java/info/cemu/cemu/emulation/inputoverlay/InputOverlaySurfaceView.kt
+@@ -538,6 +538,10 @@ class InputOverlaySurfaceView(context: Context) : SurfaceView(context), OnTouchL
+     }
+ 
+     override fun onTouch(v: View, event: MotionEvent): Boolean {
++        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
++            // deliver the events of this gesture as soon as they are available instead of batching them per frame
++            v.requestUnbufferedDispatch(event)
++        }
+         var touchEventProcessed = false
+         when (inputMode) {
+             InputMode.DEFAULT -> {
+diff --git a/src/android/app/src/main/res/xml/game_mode_config.xml b/src/android/app/src/main/res/xml/game_mode_config.xml
+new file mode 100644
+index 0000000..463f5c3
+--- /dev/null
++++ b/src/android/app/src/main/res/xml/game_mode_config.xml
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="utf-8"?>
++<game-mode-config xmlns:android="http://schemas.android.com/apk/res/android"
++    android:allowGameDownscaling="false"
++    android:allowGameFpsOverride="false"
++    android:supportsBatteryGameMode="true"
++    android:supportsPerformanceGameMode="true" />
