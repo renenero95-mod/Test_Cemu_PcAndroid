@@ -1,0 +1,35 @@
+=== JAVA ===
+openjdk version "21.0.13" 2026-10-20
+OpenJDK Runtime Environment (build 21.0.13)
+OpenJDK 64-Bit Server VM (build 21.0.13, mixed mode)
+
+=== GRADLE ===
+
+------------------------------------------------------------
+Gradle 9.9.1
+------------------------------------------------------------
+
+Build time:    2026-11-10 16:22:15 UTC
+Revision:      47a96e4ed1822d6aa7fa32bed4461208e69077a6
+
+Kotlin:        2.4.21
+Groovy:        4.0.33
+Ant:           Apache Ant(TM) version 1.10.17 compiled on April 6 2026
+Launcher JVM:  21.0.13 (Termux 21.0.13)
+Daemon JVM:    /data/data/com.termux/files/usr/lib/jvm/java-21-openjdk (no Daemon JVM specified, using current Java home)
+OS:            Linux 5.15.123-android13-8-00008-g3ca6a2912c7e-ab11087001 aarch64
+
+
+=== CMAKE ===
+cmake version 4.4.5
+
+
+=== NDK / SDK ===
+ANDROID_HOME=<non impostato>
+ANDROID_SDK_ROOT=<non impostato>
+ANDROID_NDK_HOME=/data/data/com.termux/files/usr/opt/android-ndk-r29
+PREFIX=/data/data/com.termux/files/usr
+
+=== SDK PLATFORMS ===
+
+=== SDK BUILD TOOLS ===
