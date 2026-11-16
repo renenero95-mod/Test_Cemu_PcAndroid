@@ -18,6 +18,7 @@
 #endif // HAS_CUBEB
 
 #include <android/native_window_jni.h>
+#include <dlfcn.h>
 
 // forward declaration from main.cpp
 void CemuCommonInit();
@@ -284,7 +285,16 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulation_setSurface(JNIEnv* env, [[ma
 #if __ANDROID_API__ >= 30
 		// Wii U games run at 60 (or 30) fps: ask the display to pick 60 Hz or a multiple of it instead of an unrelated refresh rate
 		if (newSurface != nullptr)
-			ANativeWindow_setFrameRate(newSurface, 60.0f, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+		{
+			using SetFrameRateFn = int32_t (*)(ANativeWindow*, float, int8_t);
+			static void* androidLib = dlopen("libandroid.so", RTLD_NOW | RTLD_LOCAL);
+			static auto setFrameRate = androidLib
+				? reinterpret_cast<SetFrameRateFn>(dlsym(androidLib, "ANativeWindow_setFrameRate"))
+				: nullptr;
+
+			if (setFrameRate)
+				setFrameRate(newSurface, 60.0f, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+		}
 #endif
 		windowHandleInfo.surface = newSurface;
 		windowHandleInfo.surface.notify_all();
