@@ -4,6 +4,7 @@
 #include "Cafe/Filesystem/FST/FST.h"
 #include "pugixml.hpp"
 #include "Common/FileStream.h"
+
 #include <zarchive/zarchivereader.h>
 #include "util/IniParser/IniParser.h"
 #include "util/crypto/crc32.h"
@@ -222,6 +223,7 @@ bool TitleInfo::DetectFormat(const fs::path& path, fs::path& pathOut, TitleDataF
 			// a Wii U archive file can contain multiple titles but TitleInfo only maps to one
 			// we use the first base title that we find. This is the most intuitive behavior when someone launches "game.wua"
 			ZArchiveReader* zar = ZArchiveHelpers::OpenReader(path);
+
 			if (!zar)
 				return false;
 			ZArchiveNodeHandle rootDir = zar->LookUp("", false, true);
@@ -357,6 +359,7 @@ ZArchiveReader* _ZArchivePool_AcquireInstance(const fs::path& path)
 	_lock.unlock();
 	// opening wua files can be expensive, so we do it outside of the lock
 	ZArchiveReader* zar = ZArchiveHelpers::OpenReader(path);
+
 	if (!zar)
 		return nullptr;
 	_lock.lock();

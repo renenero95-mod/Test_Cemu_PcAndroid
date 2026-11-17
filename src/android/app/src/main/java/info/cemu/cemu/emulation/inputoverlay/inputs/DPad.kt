@@ -147,15 +147,6 @@ class DPad(
                 }
             }
 
-            MotionEvent.ACTION_CANCEL -> {
-                // the system took over the gesture: release the d-pad
-                if (currentPointerId != -1) {
-                    currentPointerId = -1
-                    updateState(NONE)
-                    return true
-                }
-            }
-
             MotionEvent.ACTION_MOVE -> {
                 if (currentPointerId == -1) {
                     return false

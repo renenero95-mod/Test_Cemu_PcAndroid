@@ -1,3 +1,4 @@
+#include "Cafe/HW/Espresso/Analyzer/PPCPreExecutionAnalyzer.h"
 #include <zlib.h>
 #include "Cafe/OS/RPL/rpl.h"
 #include "Cafe/OS/RPL/rpl_structs.h"
@@ -71,6 +72,8 @@ uint32 ELF_LoadFromMemory(uint8* elfData, sint32 size, const char* name)
 		uint32 shAddr = (uint32)sectionTable[i].shAddr;
 		uint32 shSize = (uint32)sectionTable[i].shSize;
 		uint32 shOffset = (uint32)sectionTable[i].shOffset;
+
+		
 		uint32 shType = (uint32)sectionTable[i].shType;
 		uint32 shFlags = (uint32)sectionTable[i].shFlags;
 
@@ -80,6 +83,11 @@ uint32 ELF_LoadFromMemory(uint8* elfData, sint32 size, const char* name)
 			continue;
 		}
 		uint32 copySize = std::min(shSize, size - shOffset);
+
+		// PPC pre-execution analyzer: only scan bytes that really exist in the file image
+		// (shSize comes from the file and can exceed the data actually present -> never read past elfData+size)
+		if ((shFlags & 0x00000004) && shType != SHT_NOBITS && copySize > 0)
+			PPCPreExecutionAnalyzer::ScanExecutableSection(shAddr, (const uint8_t*)(elfData + shOffset), copySize, "ELF");
 
 		// 0x00802000
 		if (shAddr != 0)

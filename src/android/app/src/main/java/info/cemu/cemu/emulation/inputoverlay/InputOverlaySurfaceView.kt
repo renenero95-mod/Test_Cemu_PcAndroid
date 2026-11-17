@@ -538,10 +538,6 @@ class InputOverlaySurfaceView(context: Context) : SurfaceView(context), OnTouchL
     }
 
     override fun onTouch(v: View, event: MotionEvent): Boolean {
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-            // deliver the events of this gesture as soon as they are available instead of batching them per frame
-            v.requestUnbufferedDispatch(event)
-        }
         var touchEventProcessed = false
         when (inputMode) {
             InputMode.DEFAULT -> {

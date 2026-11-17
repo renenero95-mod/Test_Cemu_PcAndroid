@@ -33,19 +33,19 @@ namespace NativeEmulatedUSBDevices
 		std::string name;
 	};
 
-	std::array<std::optional<SkylanderFigure>, nsyshid::MAX_SKYLANDERS> s_skylanderSlots;
-	std::array<std::optional<InfinityFigure>, nsyshid::MAX_FIGURES> s_infinitySlots;
-	std::array<std::optional<DimensionsMiniFigure>, 7> s_dimensionSlots;
+	std::array<std::optional<SkylanderFigure>, nsyshid::MAX_SKYLANDERS> g_skylanderSlots;
+	std::array<std::optional<InfinityFigure>, nsyshid::MAX_FIGURES> g_infinitySlots;
+	std::array<std::optional<DimensionsMiniFigure>, 7> g_dimensionSlots;
 
 	void ClearDimensionsFigure(uint8 pad, uint8 index)
 	{
-		s_dimensionSlots.at(index) = std::nullopt;
+		g_dimensionSlots.at(index) = std::nullopt;
 		nsyshid::g_dimensionstoypad.RemoveFigure(pad, index, true);
 	}
 
 	void ClearSkylandersFigure(uint8 slot)
 	{
-		if (auto& slotInfo = s_skylanderSlots.at(slot))
+		if (auto& slotInfo = g_skylanderSlots.at(slot))
 		{
 			nsyshid::g_skyportal.RemoveSkylander(slotInfo->portalSlot);
 			slotInfo = std::nullopt;
@@ -54,7 +54,7 @@ namespace NativeEmulatedUSBDevices
 
 	void ClearInfinityFigure(uint8 slot)
 	{
-		s_infinitySlots.at(slot) = std::nullopt;
+		g_infinitySlots.at(slot) = std::nullopt;
 		nsyshid::g_infinitybase.RemoveFigure(slot);
 	}
 
@@ -265,7 +265,7 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_loadDimensionsFigur
 
 		uint32 figureNumber = nsyshid::g_dimensionstoypad.LoadFigure(buffer, std::forward<std::unique_ptr<FileStream>>(file), pad, index);
 		std::string figureName = nsyshid::g_dimensionstoypad.FindFigure(figureNumber);
-		NativeEmulatedUSBDevices::s_dimensionSlots.at(index) = NativeEmulatedUSBDevices::DimensionsMiniFigure{
+		NativeEmulatedUSBDevices::g_dimensionSlots.at(index) = NativeEmulatedUSBDevices::DimensionsMiniFigure{
 			.number = figureNumber,
 			.name = figureName,
 		};
@@ -280,7 +280,7 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_loadInfinityFigure(
 
 		uint32 figureNumber = nsyshid::g_infinitybase.LoadFigure(buffer, std::forward<std::unique_ptr<FileStream>>(file), slot);
 		auto [figureSeries, figureName] = nsyshid::g_infinitybase.FindFigure(figureNumber);
-		NativeEmulatedUSBDevices::s_infinitySlots.at(slot) = NativeEmulatedUSBDevices::InfinityFigure{
+		NativeEmulatedUSBDevices::g_infinitySlots.at(slot) = NativeEmulatedUSBDevices::InfinityFigure{
 			.number = figureNumber,
 			.series = figureSeries,
 			.name = figureName,
@@ -298,7 +298,7 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_loadSkylandersFigur
 		uint16 skyVar = uint16(buffer[0x1D]) << 8 | uint16(buffer[0x1C]);
 		uint8 portalSlot = nsyshid::g_skyportal.LoadSkylander(buffer.data(), std::forward<std::unique_ptr<FileStream>>(file));
 
-		NativeEmulatedUSBDevices::s_skylanderSlots.at(slot) = NativeEmulatedUSBDevices::SkylanderFigure{
+		NativeEmulatedUSBDevices::g_skylanderSlots.at(slot) = NativeEmulatedUSBDevices::SkylanderFigure{
 			.portalSlot = portalSlot,
 			.id = skyId,
 			.variant = skyVar,
@@ -310,7 +310,7 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_loadSkylandersFigur
 extern "C" JNIEXPORT jstring JNICALL
 Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_getSkylandersFigureSlot(JNIEnv* env, [[maybe_unused]] jclass clazz, jint slot)
 {
-	if (const auto& opt = NativeEmulatedUSBDevices::s_skylanderSlots.at(slot))
+	if (const auto& opt = NativeEmulatedUSBDevices::g_skylanderSlots.at(slot))
 	{
 		return env->NewStringUTF(opt->name.c_str());
 	}
@@ -321,7 +321,7 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_getSkylandersFigure
 extern "C" JNIEXPORT jstring JNICALL
 Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_getInfinityFigureSlot(JNIEnv* env, [[maybe_unused]] jclass clazz, jint slot)
 {
-	if (const auto& opt = NativeEmulatedUSBDevices::s_infinitySlots.at(slot))
+	if (const auto& opt = NativeEmulatedUSBDevices::g_infinitySlots.at(slot))
 	{
 		return env->NewStringUTF(opt->name.c_str());
 	}
@@ -332,7 +332,7 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_getInfinityFigureSl
 extern "C" JNIEXPORT jstring JNICALL
 Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_getDimensionsFigureSlot(JNIEnv* env, [[maybe_unused]] jclass clazz, jint slot)
 {
-	if (const auto& opt = NativeEmulatedUSBDevices::s_dimensionSlots.at(slot))
+	if (const auto& opt = NativeEmulatedUSBDevices::g_dimensionSlots.at(slot))
 	{
 		return env->NewStringUTF(opt->name.c_str());
 	}
@@ -376,8 +376,8 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulatedUSBDevices_moveDimensionsFigur
 	nsyshid::g_dimensionstoypad.MoveFigure(newPad, newIndex, oldPad, oldIndex);
 	if (newIndex != oldIndex)
 	{
-		auto& oldSlot = NativeEmulatedUSBDevices::s_dimensionSlots.at(oldIndex);
-		NativeEmulatedUSBDevices::s_dimensionSlots.at(newIndex) = oldSlot;
+		auto& oldSlot = NativeEmulatedUSBDevices::g_dimensionSlots.at(oldIndex);
+		NativeEmulatedUSBDevices::g_dimensionSlots.at(newIndex) = oldSlot;
 		oldSlot = std::nullopt;
 	}
 }

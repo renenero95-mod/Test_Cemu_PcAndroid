@@ -219,6 +219,7 @@ void CafeTitleList::AddTitleFromPath(fs::path path)
 	if (path.has_extension() && boost::iequals(_pathToUtf8(path.extension()), ".wua"))
 	{
 		ZArchiveReader* zar = ZArchiveHelpers::OpenReader(path);
+
 		if (!zar)
 		{
 			cemuLog_log(LogType::Force, "Found {} but it is not a valid Wii U archive file", _pathToUtf8(path));
@@ -355,7 +356,7 @@ void CafeTitleList::ScanGamePath(const fs::path& path)
 	std::vector<fs::path> filesInDirectory;
 	std::vector<fs::path> dirsInDirectory;
 	bool hasContentFolder = false, hasCodeFolder = false, hasMetaFolder = false;
-	auto checkForTitleFolders = [&](std::string_view dirName)
+	auto checkForTitleFolders = [&](const std::string& dirName)
 	{
 		if (boost::iequals(dirName, "content"))
 			hasContentFolder = true;
@@ -386,7 +387,7 @@ void CafeTitleList::ScanGamePath(const fs::path& path)
 	{
 		std::error_code ec;
 		for (auto& it : fs::directory_iterator(path, ec))
-		{
+		{		
 			if (it.is_regular_file(ec))
 			{
 				filesInDirectory.emplace_back(it.path());
@@ -398,6 +399,7 @@ void CafeTitleList::ScanGamePath(const fs::path& path)
 			}
 		}
 	}
+
 	// always check individual files
 	for (auto& it : filesInDirectory)
 	{

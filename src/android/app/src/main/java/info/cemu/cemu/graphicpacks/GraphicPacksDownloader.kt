@@ -113,18 +113,10 @@ class GraphicPacksDownloader(private val client: HttpClient = HttpClient()) {
 
         unzip(zipBytes.inputStream(), tempDir.path)
 
-        // a corrupted or empty download extracts nothing without throwing: do not record it as installed
-        if (tempDir.list().isNullOrEmpty()) {
-            throw java.io.IOException("The downloaded graphic packs archive is empty or invalid")
-        }
-
         tempDir.resolve("version.txt").writeText(version)
 
         finalDir.deleteRecursively()
-        if (!tempDir.renameTo(finalDir)) {
-            tempDir.copyRecursively(finalDir, overwrite = true)
-            tempDir.deleteRecursively()
-        }
+        tempDir.renameTo(finalDir)
 
         NativeGraphicPacks.refreshGraphicPacks()
     }
@@ -160,14 +152,7 @@ class GraphicPacksDownloader(private val client: HttpClient = HttpClient()) {
 
         emit(GraphicPacksDownloadStatus.EXTRACTING)
 
-        try {
-            extractAndInstall(zipBytes, graphicPacksDir, version)
-        } catch (exception: kotlin.coroutines.cancellation.CancellationException) {
-            throw exception
-        } catch (exception: Exception) {
-            emit(GraphicPacksDownloadStatus.ERROR)
-            return@flow
-        }
+        extractAndInstall(zipBytes, graphicPacksDir, version)
 
         emit(GraphicPacksDownloadStatus.FINISHED_DOWNLOADING)
     }

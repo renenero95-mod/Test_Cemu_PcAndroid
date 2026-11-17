@@ -85,15 +85,13 @@ void handlerDumpingSignal(int sig, siginfo_t *info, void *context)
 	if (sigName)
 	{
 		printf("%s!\n", sigName);
-		CrashLog_WriteLine(fmt::format("Error: signal {}:", sigName));
 	}
 	else
 	{
 		// should never be the case
 		printf("Unknown core dumping signal!\n");
-		CrashLog_WriteLine(fmt::format("Error: signal {}:", sig));
 	}
-
+    CrashLog_WriteLine(fmt::format("Error: signal {}:", sig));
 #if BOOST_PLAT_ANDROID
     CrashLog_WriteLine(to_string(boost::stacktrace::stacktrace()));
 #else

@@ -76,17 +76,6 @@ class Joystick(
                 }
             }
 
-            MotionEvent.ACTION_CANCEL -> {
-                // the system took over the gesture: recenter the joystick instead of leaving it pushed
-                if (currentPointerId != -1) {
-                    centerX = originalCenterX
-                    centerY = originalCenterY
-                    currentPointerId = -1
-                    updateState(false, 0.0f, 0.0f)
-                    return true
-                }
-            }
-
             MotionEvent.ACTION_MOVE -> {
                 if (currentPointerId == -1) {
                     return false

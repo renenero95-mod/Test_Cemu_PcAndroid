@@ -16,11 +16,12 @@ namespace swkbd
 		virtual void hideSoftwareKeyboard() = 0;
 	};
 
-	void setSwkbdCallbacks(std::shared_ptr<swkbdCallbacks> callbacks);
+	void setSwkbdCallbacks(const std::shared_ptr<swkbdCallbacks>& callbacks);
 
 	void render(bool mainWindow);
 	bool hasKeyboardInputHook();
 	void keyInput(uint32 keyCode);
-
+	void load();
 	COSModule* GetModule();
+
 } // namespace swkbd

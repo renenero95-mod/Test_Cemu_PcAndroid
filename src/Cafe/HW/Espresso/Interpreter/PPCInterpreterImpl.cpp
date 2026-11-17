@@ -1,5 +1,7 @@
 #include "PPCInterpreterInternal.h"
 #include "PPCInterpreterHelper.h"
+#include "util/CemuProfiling.h"
+#include "util/CemuThreadWatchdog.h"
 #include "Cafe/HW/Espresso/Debugger/Debugger.h"
 #include "Cafe/HW/Espresso/Debugger/GDBStub.h"
 
@@ -69,7 +71,8 @@ public:
 
 	inline static uint32 ppcMem_readDataU32(PPCInterpreter_t* hCPU, uint32 address)
 	{
-		uint32 v = *(uint32*)(memory_getPointerFromVirtualOffset(address));
+		void* ptr = memory_getPointerFromVirtualOffset(address);
+		uint32 v = *(uint32*)ptr;
 		return CPU_swapEndianU32(v);
 	}
 
@@ -439,6 +442,25 @@ public:
 
 	static void executeInstruction(PPCInterpreter_t* hCPU)
 	{
+#if CEMU_PROFILING
+        // Flush once per 4096 instructions to keep hot-path profiling overhead low.
+        static thread_local uint32_t profilingInstructionBatch = 0;
+        static thread_local CemuProfiling::Clock::time_point profilingBatchStart{};
+        static thread_local uint64_t profilingInstructionTotal = 0;
+        if (profilingInstructionBatch == 0)
+            profilingBatchStart = CemuProfiling::Clock::now();
+        ++profilingInstructionTotal;
+        if (++profilingInstructionBatch == 4096)
+        {
+            CemuProfiling::Interpreter().Record(
+                profilingInstructionBatch, CemuProfiling::ElapsedNs(profilingBatchStart));
+            cemuLog_log(LogType::Force,
+                "[PPC PC SAMPLE] pc=0x{:08X} inst={}",
+                static_cast<uint32>(hCPU->instructionPointer),
+                static_cast<unsigned long long>(profilingInstructionTotal));
+            profilingInstructionBatch = 0;
+        }
+#endif
 		if constexpr(ppcItpCtrl::allowSupervisorMode)
 		{
 			hCPU->global->tb++;

@@ -123,7 +123,7 @@ XMLConfigParser CemuConfig::Load(XMLConfigParser& parser)
 
 	// graphics
 	auto graphic = parser.get("Graphic");
-	graphic_api = graphic.get("api", kDefaultGraphicsAPI);
+	graphic_api = graphic.get("api", kOpenGL);
 	graphic.get("device", legacy_graphic_device_uuid);
 	if (graphic.get("vkDevice").valid())
 		graphic.get("vkDevice", vk_graphic_device_uuid);
@@ -138,13 +138,13 @@ XMLConfigParser CemuConfig::Load(XMLConfigParser& parser)
 	userDisplayGamma = graphic.get("UserDisplayGamma", 2.2f);
 	if(userDisplayGamma < 0)
 		userDisplayGamma = 2.2f;
-	gx2drawdone_sync = graphic.get("GX2DrawdoneSync", true);
+	gx2drawdone_sync = graphic.get("GX2DrawdoneSync", false);
 	upscale_filter = graphic.get("UpscaleFilter", kBicubicHermiteFilter);
 	downscale_filter = graphic.get("DownscaleFilter", kLinearFilter);
 	fullscreen_scaling = graphic.get("FullscreenScaling", kKeepAspectRatio);
 	async_compile = graphic.get("AsyncCompile", async_compile);
 	vk_accurate_barriers = graphic.get("vkAccurateBarriers", true); // this used to be "VulkanAccurateBarriers" but because we changed the default to true in 1.27.1 the option name had to be changed
-#ifdef ENABLE_METAL
+#if ENABLE_METAL
 	force_mesh_shaders = graphic.get("ForceMeshShaders", false);
 #endif
 
@@ -273,7 +273,7 @@ XMLConfigParser CemuConfig::Load(XMLConfigParser& parser)
 	crash_dump = debug.get("CrashDumpUnix", crash_dump);
 #endif
 	gdb_port = debug.get("GDBPort", 1337);
-#ifdef ENABLE_METAL
+#if ENABLE_METAL
 	gpu_capture_dir = debug.get("GPUCaptureDir", "");
 	framebuffer_fetch = debug.get("FramebufferFetch", true);
 #endif
@@ -290,7 +290,7 @@ XMLConfigParser CemuConfig::Load(XMLConfigParser& parser)
 	emulated_usb_devices.emulate_infinity_base = usbdevices.get("EmulateInfinityBase", emulated_usb_devices.emulate_infinity_base);
 	emulated_usb_devices.emulate_dimensions_toypad = usbdevices.get("EmulateDimensionsToypad", emulated_usb_devices.emulate_dimensions_toypad);
 
-
+	
 #if BOOST_PLAT_ANDROID
 	custom_driver_path = parser.get("custom_driver_path", "");
 #endif
@@ -307,7 +307,6 @@ XMLConfigParser CemuConfig::Save(XMLConfigParser& parser)
 	config.set("mlc_path", mlc_path.GetValue().c_str());
 	config.set<bool>("permanent_storage", permanent_storage);
 	config.set("proxy_server", proxy_server.GetValue().c_str());
-	config.set<bool>("disable_screensaver", disable_screensaver);
 	config.set<bool>("play_boot_sound", play_boot_sound);
 
 	// config.set("cpu_mode", cpu_mode.GetValue());
@@ -374,7 +373,7 @@ XMLConfigParser CemuConfig::Save(XMLConfigParser& parser)
 	graphic.set("OverrideGammaValue", overrideGammaValue);
 	graphic.set("UserDisplayGamma", userDisplayGamma);
 	graphic.set("GX2DrawdoneSync", gx2drawdone_sync);
-#ifdef ENABLE_METAL
+#if ENABLE_METAL
 	graphic.set("ForceMeshShaders", force_mesh_shaders);
 #endif
 	//graphic.set("PrecompiledShaders", precompiled_shaders.GetValue());
@@ -443,7 +442,7 @@ XMLConfigParser CemuConfig::Save(XMLConfigParser& parser)
 	debug.set("CrashDumpUnix", crash_dump.GetValue());
 #endif
 	debug.set("GDBPort", gdb_port);
-#ifdef ENABLE_METAL
+#if ENABLE_METAL
 	debug.set("GPUCaptureDir", gpu_capture_dir);
 	debug.set("FramebufferFetch", framebuffer_fetch);
 #endif

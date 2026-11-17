@@ -27,7 +27,6 @@ public:
 		bool lzcnt{ false };
 		bool movbe{ false };
 		bool bmi2{ false };
-		bool fastPext{ false }; // use PEXT instead of shifts and masks
 		bool aesni{ false };
 		bool invariant_tsc{ false };
 	}x86;

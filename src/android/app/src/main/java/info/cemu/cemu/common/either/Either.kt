@@ -22,9 +22,6 @@ sealed class Either<out T, out E> {
 
 inline fun <T> attempt(block: () -> T): Either<T, String> = try {
     Success(block())
-} catch (e: kotlin.coroutines.cancellation.CancellationException) {
-    // a cancelled coroutine must stay cancelled instead of being reported as an error
-    throw e
 } catch (e: Exception) {
     Error(e.message ?: "Unknown error")
 }

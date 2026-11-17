@@ -1,7 +1,5 @@
 add_library(CemuCommon 
   betype.h
-  CafeStaticVar.cpp
-  CafeStaticVar.h
   cpu_features.cpp
   cpu_features.h
   enumFlags.h
@@ -65,7 +63,6 @@ if(ANDROID)
     android/FilesystemAndroid.cpp
     android/FilesystemAndroid.h
   )
-  target_link_libraries(CemuCommon PRIVATE Boost::iostreams)
 endif()
 
 # CemuCommon always builts the precompiled header
@@ -75,6 +72,10 @@ target_include_directories(CemuCommon PUBLIC "../")
 target_link_libraries(CemuCommon PRIVATE
 	glm::glm
 )
+
+if(ANDROID)
+  target_link_libraries(CemuCommon PRIVATE Boost::iostreams)
+endif()
 
 if (UNIX AND NOT APPLE AND NOT ANDROID)
 	target_link_libraries(CemuCommon PRIVATE X11::X11 X11::Xrender X11::Xutil)
