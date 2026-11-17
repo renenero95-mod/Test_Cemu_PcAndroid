@@ -48,6 +48,8 @@ jobs:
           }
           fetch dependencies/ZArchive      https://github.com/Exzap/ZArchive
           fetch dependencies/cubeb         https://github.com/mozilla/cubeb
+          # Initialize cubeb nested dependencies (including sanitizers-cmake)
+          git -C dependencies/cubeb submodule update --init --recursive
           fetch dependencies/Vulkan-Headers https://github.com/KhronosGroup/Vulkan-Headers
           fetch dependencies/imgui         https://github.com/ocornut/imgui
           fetch dependencies/libadrenotools https://github.com/bylaws/libadrenotools
