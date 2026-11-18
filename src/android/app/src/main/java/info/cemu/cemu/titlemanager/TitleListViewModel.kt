@@ -14,6 +14,8 @@ import info.cemu.cemu.titlemanager.usecases.CompressTitleUseCase
 import info.cemu.cemu.titlemanager.usecases.DeleteResult
 import info.cemu.cemu.titlemanager.usecases.DeleteTitleUseCase
 import info.cemu.cemu.titlemanager.usecases.InstallResult
+import info.cemu.cemu.titlemanager.usecases.ImportResult
+import info.cemu.cemu.titlemanager.usecases.ImportTitlesUseCase
 import info.cemu.cemu.titlemanager.usecases.InstallTitleUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,6 +41,7 @@ data class TitleListFilter(
 class TitleListViewModel : ViewModel() {
     private val mlcPath = Path(NativeActiveSettings.getMLCPath())
     private val installUseCase = InstallTitleUseCase(viewModelScope, mlcPath)
+    private val importUseCase = ImportTitlesUseCase(viewModelScope, mlcPath)
     private val deleteUseCase = DeleteTitleUseCase(viewModelScope)
     private val compressUseCase = CompressTitleUseCase(viewModelScope)
 
@@ -196,6 +199,14 @@ class TitleListViewModel : ViewModel() {
         _queuedTitleToInstall.value = null
     }
 
+
+    val titleImportInProgress = importUseCase.inProgress
+
+    fun importTitlesFromZip(context: Context, zipUri: Uri, callback: (ImportResult) -> Unit) =
+        importUseCase.importFromZip(context, zipUri, callback)
+
+    fun importTitlesFromFolder(context: Context, folderUri: Uri, callback: (ImportResult) -> Unit) =
+        importUseCase.importFromFolder(context, folderUri, callback)
 
     val titleInstallInProgress = installUseCase.inProgress
     val titleInstallProgress = installUseCase.progress

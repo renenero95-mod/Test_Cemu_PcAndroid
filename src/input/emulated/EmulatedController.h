@@ -101,8 +101,9 @@ public:
 	bool was_home_button_down() { return std::exchange(m_homebutton_down, false); }
 
 	virtual bool set_default_mapping(const std::shared_ptr<ControllerBase>& controller) { return false; }
-	void setButtonValue(uint64 mapping, bool value);
-	void setAxisValue(uint64 mapping, float value);
+	void set_button_value(uint64 mapping, bool value);
+	void set_axis_value(uint64 mapping, float value);
+
 protected:
 	size_t m_player_index;
 	std::string m_profile_name = "default";
@@ -121,7 +122,7 @@ protected:
 	std::unordered_map<uint64, Mapping> m_mappings;
 	std::unordered_map<uint64, bool> m_overriddenButtonMappings;
 	std::unordered_map<uint64, float> m_overriddenAxisMappings;
- 
+
 	bool m_homebutton_down = false;
 };
 
@@ -138,6 +139,6 @@ struct fmt::formatter<EmulatedController::Type> : formatter<string_view> {
 		case EmulatedController::Type::Classic: return formatter<string_view>::format("Wii U Classic Controller Pro", ctx);
 		case EmulatedController::Type::Wiimote: return formatter<string_view>::format("Wiimote", ctx);
 		}
-		throw std::invalid_argument(fmt::format("invalid emulated controller type with value {}", to_underlying(v)));
+		throw std::invalid_argument(fmt::format("invalid emulated controller type with value {}", stdx::to_underlying(v)));
 	}
 };

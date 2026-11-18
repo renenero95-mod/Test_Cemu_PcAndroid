@@ -10,6 +10,7 @@ import info.cemu.cemu.common.settings.GamePadPosition
 import info.cemu.cemu.common.ui.components.Button
 import info.cemu.cemu.common.ui.components.ScreenContent
 import info.cemu.cemu.common.ui.components.SingleSelection
+import info.cemu.cemu.common.ui.components.Toggle
 import info.cemu.cemu.common.ui.localization.tr
 import info.cemu.cemu.nativeinterface.NativeSettings
 
@@ -67,6 +68,12 @@ fun GeneralSettingsScreen(
             onChoiceChanged = { viewModel.setGamePadPosition(it) },
             choiceToString = { gamePadPositionToString(it) },
             choices = GamePadPosition.entries,
+        )
+        Toggle(
+            label = tr("Bypass system update check"),
+            description = tr("Experimental. For games that refuse to start asking for a system update, update or DLC. Makes the emulated system report the latest firmware and logs unsupported API calls to help find the failing check. Off by default"),
+            initialCheckedState = NativeSettings::getBypassSystemUpdateCheck,
+            onCheckedChanged = NativeSettings::setBypassSystemUpdateCheck,
         )
     }
 }

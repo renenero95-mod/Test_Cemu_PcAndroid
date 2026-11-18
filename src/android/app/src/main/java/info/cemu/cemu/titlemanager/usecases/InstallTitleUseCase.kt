@@ -93,8 +93,10 @@ class InstallTitleUseCase(
                 }
 
                 backupFile.deleteRecursively()
-                if (installFile.exists())
-                    installFile.renameTo(backupFile)
+                if (installFile.exists() && !installFile.renameTo(backupFile)) {
+                    // do not install over the existing title if it could not be moved out of the way
+                    throw java.io.IOException("Failed to back up the existing installation")
+                }
 
                 installStarted = true
                 _progress.value = 0L to totalSize

@@ -1,6 +1,7 @@
 package info.cemu.cemu.common.io
 
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -28,11 +29,18 @@ private fun extractZipEntry(
     buffer: ByteArray,
     targetDir: String,
 ) {
-    val file = Paths.get(targetDir, zipEntry.name).toFile()
+    val targetRoot = Paths.get(targetDir).toAbsolutePath().normalize()
+    val entryPath = targetRoot.resolve(zipEntry.name.trimStart('/', '\\')).normalize()
+    if (!entryPath.startsWith(targetRoot)) {
+        throw IOException("Zip entry is outside of the target directory: ${zipEntry.name}")
+    }
+    val file = entryPath.toFile()
     if (zipEntry.isDirectory) {
         file.apply { if (!isDirectory) mkdirs() }
         return
     }
+    // some zip files do not contain entries for directories
+    file.parentFile?.mkdirs()
     FileOutputStream(file).use { fileOutputStream ->
         var bytesRead: Int
         while ((zipInputStream.read(buffer).also { bytesRead = it }) > 0) {

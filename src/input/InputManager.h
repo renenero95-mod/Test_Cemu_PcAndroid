@@ -9,9 +9,10 @@
 #include "input/api/Wiimote/WiimoteControllerProvider.h"
 #endif
 
-#include "util/helpers/Singleton.h"
-
+#ifdef HAS_SDL
 #include "input/api/SDL/SDLControllerProvider.h"
+#endif
+
 #include "input/api/Keyboard/KeyboardControllerProvider.h"
 #include "input/api/DSU/DSUControllerProvider.h"
 #include "input/api/GameCube/GameCubeControllerProvider.h"
@@ -24,8 +25,7 @@
 #include "input/emulated/VPADController.h"
 #include "input/emulated/WPADController.h"
 
-#include <atomic>
-#include <optional>
+#include "util/helpers/Singleton.h"
 
 class InputManager : public Singleton<InputManager>
 {
@@ -41,9 +41,6 @@ public:
 	constexpr static size_t kMaxVPADControllers = 2;
 	constexpr static size_t kMaxWPADControllers = 7;
 	
-	static bool input_config_window_has_focus();
-	static void set_input_config_window_focus(bool has_focus);
-
 	void load() noexcept;
 	bool load(size_t player_index, std::string_view filename = {});
 
@@ -54,6 +51,8 @@ public:
 
 	bool is_gameprofile_set(size_t player_index) const;
 
+	void Shutdown(); 
+	
 	EmulatedControllerPtr set_controller(EmulatedControllerPtr controller);
 	EmulatedControllerPtr set_controller(size_t player_index, EmulatedController::Type type);
 	EmulatedControllerPtr set_controller(size_t player_index, EmulatedController::Type type, const std::shared_ptr<ControllerBase>& controller);
@@ -99,6 +98,7 @@ public:
 	std::optional<glm::ivec2> get_right_down_mouse_info(bool* is_pad);
 
 	std::atomic<float> m_mouse_wheel;
+
 private:
 	void update_thread();
 

@@ -170,7 +170,7 @@ class EmulationViewModel(
 
                 destroyedSurfaces.set(isMainCanvas, false)
             } catch (exception: NativeException) {
-                _emulationError.value = NativeError.SurfaceCreationError(exception.message!!)
+                _emulationError.value = NativeError.SurfaceCreationError(exception.message ?: "")
             }
         }
 

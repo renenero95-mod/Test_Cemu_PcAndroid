@@ -2,9 +2,13 @@
 #include "WindowSystem.h"
 #include "Cafe/HW/Latte/Renderer/Renderer.h"
 #include "resource/IconsFontAwesome5.h"
-#include "imgui_impl_opengl3.h"
 #include "resource/resource.h"
+#ifdef ENABLE_OPENGL
+#include "imgui_impl_opengl3.h"
+#endif
+#ifdef ENABLE_VULKAN
 #include "imgui_impl_vulkan.h"
+#endif
 #include "input/InputManager.h"
 
 // <imgui_internal.h>
@@ -128,7 +132,7 @@ void ImGui_UpdateWindowInformation(bool mainWindow)
 	io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 #if BOOST_OS_WINDOWS
-	io.ImeWindowHandle = mainWindow ? windowInfo.window_main.surface : windowInfo.window_pad.surface;
+	io.ImeWindowHandle = mainWindow ? windowInfo.window_main.surface.load(std::memory_order::relaxed) : windowInfo.window_pad.surface.load(std::memory_order::relaxed);
 #else
 	io.ImeWindowHandle = nullptr;
 #endif

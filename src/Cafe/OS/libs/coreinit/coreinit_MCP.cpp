@@ -199,7 +199,8 @@ namespace coreinit
 
 		systemVersion->n0 = 0x5;
 		systemVersion->n1 = 0x5;
-		systemVersion->n2 = 0x5;
+		// 5.5.5 by default; the "Bypass system update check" setting reports 5.5.6, the last official firmware
+		systemVersion->n2 = GetConfig().bypass_system_update_check ? 0x6 : 0x5;
 		// todo: Load this from \sys\title\00050010\10041200\content\version.bin
 
 		osLib_returnFromFunction(hCPU, 0);
@@ -421,6 +422,15 @@ namespace coreinit
 		return 0;
 	}
 
+	uint32 MCP_DemoLaunchGetRemainder(uint32 mcpHandle, uint64 titleId, uint32be* outRemainder)
+	{
+		// stub to always return 99 uses remaining for game demos.
+		// used by drmapp.rpl to determine remaining uses for game demos
+		if (outRemainder)
+			*outRemainder = 99;
+		return 0;
+	}
+
 	void InitializeMCP()
 	{
 		osLib_addFunction("coreinit", "MCP_Open", coreinitExport_MCP_Open);
@@ -450,6 +460,7 @@ namespace coreinit
 		cafeExportRegister("coreinit", MCP_GetEcoSettings, LogType::Placeholder);
 
 		cafeExportRegister("coreinit", MCP_GetTitleId, LogType::Placeholder);
+		cafeExportRegister("coreinit", MCP_DemoLaunchGetRemainder, LogType::Placeholder);
 	}
 
 }

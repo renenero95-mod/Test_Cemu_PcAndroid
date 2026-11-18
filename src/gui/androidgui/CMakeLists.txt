@@ -1,6 +1,5 @@
 add_library(CemuAndroidGui
     AndroidWindowSystem.cpp
-    AndroidWindowSystem.h
 )
 
 cemu_use_precompiled_header(CemuAndroidGui)

@@ -19,7 +19,6 @@
 
 #include "util/helpers/helpers.h"
 #include "config/ActiveSettings.h"
-#include "Cafe/HW/Latte/Renderer/Vulkan/VsyncDriver.h"
 
 #include "Cafe/IOSU/legacy/iosu_crypto.h"
 #include "Cafe/OS/libs/vpad/vpad.h"
@@ -27,12 +26,14 @@
 #include "audio/IAudioAPI.h"
 #include "audio/IAudioInputAPI.h"
 #if BOOST_OS_WINDOWS
+#include <WinSock2.h>
 #pragma comment(lib,"Dbghelp.lib")
 #endif
 
-#if HAS_SDL
+#ifdef HAS_SDL
 #define SDL_MAIN_HANDLED
-#include <SDL.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #endif
 
 #if BOOST_OS_LINUX
@@ -69,7 +70,8 @@ void _putenvSafe(const char* c)
 
 void reconfigureGLDrivers()
 {
-	// reconfigure GL drivers to store 
+#ifdef ENABLE_OPENGL
+	// reconfigure GL drivers to store
 	const fs::path nvCacheDir = ActiveSettings::GetCachePath("shaderCache/driver/nvidia/");
 
 	std::error_code err;
@@ -85,13 +87,15 @@ void reconfigureGLDrivers()
     _putenvSafe(nvCacheDirEnvOption.c_str());
 #endif
     _putenvSafe("__GL_SHADER_DISK_CACHE_SKIP_CLEANUP=1");
-
+#endif
 }
 
 void reconfigureVkDrivers()
 {
+#ifdef ENABLE_VULKAN
     _putenvSafe("DISABLE_LAYER_AMD_SWITCHABLE_GRAPHICS_1=1");
     _putenvSafe("DISABLE_VK_LAYER_VALVE_steam_fossilize_1=1");
+#endif
 }
 
 void WindowsInitCwd()
@@ -103,7 +107,7 @@ void WindowsInitCwd()
 		executablePath.resize(i);
 	else
 		executablePath.clear();
-	SetCurrentDirectoryW(executablePath.c_str());
+	SetCurrentDirectoryW(fs::path(executablePath).parent_path().c_str());
 	// set high priority
 	SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 	#endif
@@ -121,6 +125,11 @@ void CemuCommonInit()
 
 	WindowsInitCwd();
     ExceptionHandler_Init();
+#if BOOST_OS_WINDOWS
+	// init sockets
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 	// read config
 	GetConfigHandle().Load();
 	if (NetworkConfig::XMLExists())
@@ -195,41 +204,22 @@ void requireConsole()
 
 void HandlePostUpdate()
 {
-	// finalize update process
-	// delete update cemu.exe.backup if available
-	const auto filename = ActiveSettings::GetExecutablePath().replace_extension("exe.backup");
-	if (fs::exists(filename))
+	auto exeBackupPath = ActiveSettings::GetExecutablePath();
+	exeBackupPath.replace_extension( _utf8ToPath(_pathToUtf8(exeBackupPath.extension()).append(".backup")));
+	std::error_code ec;
+	if (!fs::exists(exeBackupPath, ec))
+		return;
+	// try to delete update residue, but give up quickly as to not cause a permanent hang
+	// it may succeed on next turn
+	for (sint32 i=0; i<3; i++)
 	{
-#if BOOST_OS_WINDOWS
-		HANDLE lock;
-		do
-		{
-			lock = CreateMutexW(nullptr, TRUE, L"Global\\cemu_update_lock");
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		} while (lock == nullptr);
-		const DWORD wait_result = WaitForSingleObject(lock, 2000);
-		CloseHandle(lock);
-
-		if (wait_result == WAIT_OBJECT_0)
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
-			std::error_code ec;
-			fs::remove(filename, ec);
-		}
-#else
-		while (fs::exists(filename))
-		{
-			std::error_code ec;
-			fs::remove(filename, ec);
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		}
-#endif
+		if (fs::remove(exeBackupPath, ec))
+			break;
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 }
 
 void ToolShaderCacheMerger();
-
-void gui_create();
 
 #if BOOST_OS_WINDOWS
 
@@ -238,9 +228,12 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int
 {
 	if (FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE)))
 		cemuLog_log(LogType::Force, "CoInitializeEx() failed");
+#ifdef HAS_SDL
 	SDL_SetMainReady();
-	if (!LaunchSettings::HandleCommandline(lpCmdLine))
-		return 0;
+#endif
+	auto parse_rc = LaunchSettings::HandleCommandline(lpCmdLine);
+	if (parse_rc.has_value())
+		return *parse_rc;
 	WindowSystem::Create();
 	return 0;
 }
@@ -250,9 +243,12 @@ int main(int argc, char* argv[])
 {
 	if (FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE)))
 		cemuLog_log(LogType::Force, "CoInitializeEx() failed");
+#ifdef HAS_SDL
 	SDL_SetMainReady();
-	if (!LaunchSettings::HandleCommandline(argc, argv))
-		return 0;
+#endif
+	auto parse_rc = LaunchSettings::HandleCommandline(argc, argv);
+	if (parse_rc.has_value())
+		return *parse_rc;
 	WindowSystem::Create();
 	return 0;
 }
@@ -263,7 +259,7 @@ int main(int argc, char* argv[])
 int BreathOfTheWildChildProcessMain();
 int main(int argc, char *argv[])
 {
-#if BOOST_OS_LINUX
+#if BOOST_OS_LINUX && defined(ENABLE_VULKAN)
 	if (getenv("CEMU_DETECT_RADV") != nullptr)
 		return BreathOfTheWildChildProcessMain();
 #endif
@@ -271,8 +267,9 @@ int main(int argc, char *argv[])
 #if BOOST_OS_LINUX || BOOST_OS_BSD
     XInitThreads();
 #endif
-    if (!LaunchSettings::HandleCommandline(argc, argv))
-		return 0;
+	auto parse_rc = LaunchSettings::HandleCommandline(argc, argv);
+  if (parse_rc.has_value())
+		return *parse_rc;
 	WindowSystem::Create();
 	return 0;
 }

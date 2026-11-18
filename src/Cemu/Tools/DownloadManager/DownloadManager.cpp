@@ -25,16 +25,8 @@
 
 FileCache* s_nupFileCache = nullptr;
 
-// Todo: replace this
-std::string _(const std::string& str) { return str; }
-std::string from_wxString(const std::string& str){ return str; }
-
-void DownloadManager::setOnGameListRefreshRequested(const std::function<void()>& onGameListRefreshRequested)
-{
-	m_onGameListRefreshRequested = onGameListRefreshRequested;
-}
-
 /* version list */
+
 void DownloadManager::downloadTitleVersionList()
 {
 	if (m_hasTitleVersionList)
@@ -291,7 +283,7 @@ void DownloadManager::loadTicketCache()
 			return;
 		}
 		uint64 ticketId = memReader.readBE<uint64>();
-		uint64 ticketVersion = memReader.readBE<uint32>();
+		uint32 ticketVersion = memReader.readBE<uint32>();
 		std::vector<uint8> eTicketData = memReader.readPODVector<uint8>();
 		std::vector<std::vector<uint8>> eTicketCerts;
 		uint8 certCount = memReader.readBE<uint8>();
@@ -668,12 +660,6 @@ void DownloadManager::connect(
 	std::string_view serial,
 	std::string_view deviceCertBase64)
 {
-	if (nnidAccountName.empty())
-	{
-		m_connectState.store(CONNECT_STATE::FAILED);
-		setStatusMessage("This account is not linked with an NNID", DLMGR_STATUS_CODE::FAILED);
-		return;
-	}
 	runManager();
 	m_authInfo.nnidAccountName = nnidAccountName;
 	m_authInfo.passwordHash = passwordHash;

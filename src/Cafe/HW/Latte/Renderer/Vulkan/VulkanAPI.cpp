@@ -58,6 +58,14 @@ void VulkanBenchmarkPrintResults()
 	cemuLog_log(LogType::Force, "--- Vulkan API CPU benchmark ---");
 	cemuLog_log(LogType::Force, "Elapsed cycles this frame: {:} | Current cycle {:} | NumFunc {:}", elapsedCycles, currentCycle, s_vulkanBenchmarkFuncs.size());
 
+	// sum up total time of Vulkan calls
+	uint64 totalVkCycles = 0;
+	for (auto& it : s_vulkanBenchmarkFuncs)
+	{
+		totalVkCycles += it->cycles;
+	}
+	cemuLog_log(LogType::Force, "Total Vulkan time: {:.4}%", ((double)totalVkCycles / elapsedCyclesDbl) * 100.0);
+
 	std::vector<sint32> sortedIndices(s_vulkanBenchmarkFuncs.size());
 	std::iota(sortedIndices.begin(), sortedIndices.end(), 0);
 	std::sort(sortedIndices.begin(), sortedIndices.end(),
@@ -100,7 +108,7 @@ bool InitializeGlobalVulkan()
 		FreeLibrary(hmodule);
 		return false;
 	}
-
+	
 	g_vulkan_available = true;
 	return true;
 }
@@ -113,7 +121,7 @@ bool InitializeInstanceVulkan(VkInstance instance)
 
 	#define VKFUNC_INSTANCE_INIT
 	#include "Cafe/HW/Latte/Renderer/Vulkan/VulkanAPI.h"
-
+	
 	return true;
 }
 
@@ -169,10 +177,19 @@ std::string get_custom_driver_lib_name(const fs::path& driver_path)
 	rapidjson::Document doc;
 	doc.ParseStream(str);
 
+	// meta.json can be empty, truncated or not a JSON object: HasMember() is only valid on objects
+	if (doc.HasParseError() || !doc.IsObject())
+		return {};
+
 	if (!doc.HasMember(LIB_NAME_MEMBER) || !doc[LIB_NAME_MEMBER].IsString())
 		return {};
 
 	std::string lib_name = doc[LIB_NAME_MEMBER].GetString();
+
+	// the library must stay inside the driver directory
+	const fs::path lib_path(lib_name);
+	if (lib_name.empty() || lib_path.is_absolute() || std::any_of(lib_path.begin(), lib_path.end(), [](const fs::path& part) { return part == ".."; }))
+		return {};
 
 	std::error_code ec;
 	if (!fs::exists(driver_path / lib_name, ec))
@@ -212,6 +229,12 @@ void* load_custom_driver()
 
 	std::error_code ec;
 	fs::copy(fs::path(driver_path.value()) / driver_name, ActiveSettings::GetInternalPath(CUSTOM_DRIVER_LIB_NAME), fs::copy_options::overwrite_existing, ec);
+	if (ec)
+	{
+		// do not fall through to a stale custom_vulkan.so left behind by a previous run
+		cemuLog_log(LogType::Force, "Failed to copy custom driver: {}", ec.message());
+		return nullptr;
+	}
 
 	void* vulkan_so = adrenotools_open_libvulkan(
 		RTLD_NOW | RTLD_LOCAL,
@@ -254,10 +277,10 @@ void* dlopen_vulkan_loader()
 
 bool InitializeGlobalVulkan()
 {
-	g_vulkan_so = dlopen_vulkan_loader();
-
 	if (g_vulkan_available)
 		return true;
+
+	g_vulkan_so = dlopen_vulkan_loader();
 
 	if (!g_vulkan_so)
 	{
@@ -304,7 +327,7 @@ bool InitializeInstanceVulkan(VkInstance instance)
 
 	#define VKFUNC_INSTANCE_INIT
 	#include "Cafe/HW/Latte/Renderer/Vulkan/VulkanAPI.h"
-
+	
 	return true;
 }
 

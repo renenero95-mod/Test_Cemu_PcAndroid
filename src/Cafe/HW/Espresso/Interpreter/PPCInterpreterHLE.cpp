@@ -1,8 +1,6 @@
 #include "../PPCState.h"
 #include "PPCInterpreterInternal.h"
 #include "PPCInterpreterHelper.h"
-#include "util/CemuProfiling.h"
-#include "util/CemuThreadWatchdog.h"
 
 std::unordered_set<std::string> s_unsupportedHLECalls;
 
@@ -57,9 +55,6 @@ std::mutex s_hleLogMutex;
 
 void PPCInterpreter_virtualHLE(PPCInterpreter_t* hCPU, unsigned int opcode)
 {
-#if CEMU_PROFILING
-    CemuProfiling::ScopedTimer profilingTimer(CemuProfiling::HLE());
-#endif
 	uint32 hleFuncId = opcode & 0xFFFF;
 	if (hleFuncId == 0xFFD0) [[unlikely]]
 	{

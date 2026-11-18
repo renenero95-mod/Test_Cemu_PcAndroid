@@ -98,6 +98,11 @@ bool IAudioAPI::IsAudioAPIAvailable(AudioAPI api)
 	return false;
 }
 
+void IAudioAPI::SetAudioDelay(uint32 audioDelay)
+{
+	s_audioDelay = audioDelay;
+}
+
 AudioAPIPtr IAudioAPI::CreateDeviceFromConfig(AudioType type, sint32 rate, sint32 samples_per_block, sint32 bits_per_sample)
 {
 	sint32 channels = CemuConfig::AudioChannelsToNChannels(AudioTypeToChannels(type));

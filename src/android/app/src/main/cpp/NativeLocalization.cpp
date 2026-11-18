@@ -2,11 +2,11 @@
 
 namespace NativeLocalization
 {
-	std::unordered_map<std::string_view, std::string> g_messages;
+	std::map<std::string, std::string, std::less<>> s_messages;
 
 	std::string Translate(std::string_view msgId)
 	{
-		if (auto message = g_messages.find(msgId); message != g_messages.end())
+		if (auto message = s_messages.find(msgId); message != s_messages.end())
 		{
 			return message->second;
 		}
@@ -18,7 +18,7 @@ namespace NativeLocalization
 extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
 Java_info_cemu_cemu_nativeinterface_NativeLocalization_setTranslations(JNIEnv* env, [[maybe_unused]] jclass clazz, jobject translations)
 {
-    NativeLocalization::g_messages.clear();
+    NativeLocalization::s_messages.clear();
 
 	jclass mapClass = env->GetObjectClass(translations);
 	jmethodID keySetMethodId = env->GetMethodID(mapClass, "keySet", "()Ljava/util/Set;");
@@ -35,7 +35,7 @@ Java_info_cemu_cemu_nativeinterface_NativeLocalization_setTranslations(JNIEnv* e
 		std::string key = JNIUtils::FromJString(env, keyJava);
 		auto translationJava = static_cast<jstring>(env->CallObjectMethod(translations, getMethodId, keyJava));
 		std::string translation = JNIUtils::FromJString(env, translationJava);
-		NativeLocalization::g_messages[key] = translation;
+		NativeLocalization::s_messages[key] = translation;
 	}
 
     SetTranslationCallback(NativeLocalization::Translate);

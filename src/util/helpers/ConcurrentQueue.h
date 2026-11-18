@@ -44,12 +44,12 @@ public:
 		return m_queue.front();
 	}
 
-	bool peek2(T& item)
+	bool try_pop(T& item)
 	{
 		std::unique_lock<std::mutex> mlock(m_mutex);
 		if (m_queue.empty())
 			return false;
-		item = m_queue.front();
+		item = std::move(m_queue.front());
 		m_queue.pop();
 		return true;
 	}
@@ -62,7 +62,7 @@ public:
 			m_condVar.wait(mlock);
 		}
 
-		auto val = m_queue.front();
+		auto val = std::move(m_queue.front());
 		m_queue.pop();
 		return val;
 	}
@@ -75,7 +75,7 @@ public:
 			m_condVar.wait(mlock);
 		}
 
-		item = m_queue.front();
+		item = std::move(m_queue.front());
 		m_queue.pop();
 	}
 

@@ -18,12 +18,26 @@
 #endif // HAS_CUBEB
 
 #include <android/native_window_jni.h>
+#include <dlfcn.h>
 
 // forward declaration from main.cpp
 void CemuCommonInit();
 
 namespace NativeEmulation
 {
+	// ANativeWindow_setFrameRate exists only from API 30 and linking it directly failed in the CI build: resolve it at runtime
+	void SetWindowFrameRate(ANativeWindow* window, float frameRate)
+	{
+		using SetFrameRateFn = int32_t (*)(ANativeWindow*, float, int8_t);
+		static const SetFrameRateFn setFrameRate = []() -> SetFrameRateFn {
+			void* androidLib = dlopen("libandroid.so", RTLD_NOW | RTLD_LOCAL);
+			if (!androidLib)
+				return nullptr;
+			return reinterpret_cast<SetFrameRateFn>(dlsym(androidLib, "ANativeWindow_setFrameRate"));
+		}();
+		if (setFrameRate && window)
+			setFrameRate(window, frameRate, 1 /* ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE */);
+	}
 
 	void CreateAudioDevice(IAudioAPI::AudioAPI audioApi, AudioChannels channels, sint32 volume, bool isTV)
 	{
@@ -281,6 +295,8 @@ Java_info_cemu_cemu_nativeinterface_NativeEmulation_setSurface(JNIEnv* env, [[ma
 			ANativeWindow_release(static_cast<ANativeWindow*>(oldWindow));
 		auto newSurface = ANativeWindow_fromSurface(env, surface);
 		ANativeWindow_acquire(newSurface);
+		// Wii U games run at 60 (or 30) fps: ask the display to pick 60 Hz or a multiple of it instead of an unrelated refresh rate
+		NativeEmulation::SetWindowFrameRate(newSurface, 60.0f);
 		windowHandleInfo.surface = newSurface;
 		windowHandleInfo.surface.notify_all();
 	});

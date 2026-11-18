@@ -426,3 +426,17 @@ Java_info_cemu_cemu_nativeinterface_NativeSettings_saveSettings([[maybe_unused]]
 {
 	GetConfigHandle().Save();
 }
+
+extern "C" [[maybe_unused]] JNIEXPORT jboolean JNICALL
+Java_info_cemu_cemu_nativeinterface_NativeSettings_getBypassSystemUpdateCheck([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz)
+{
+	return GetConfig().bypass_system_update_check;
+}
+
+extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+Java_info_cemu_cemu_nativeinterface_NativeSettings_setBypassSystemUpdateCheck([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jboolean enabled)
+{
+	GetConfig().bypass_system_update_check = enabled;
+	// the switch also logs unsupported API calls, which is what tells us which check a game fails
+	cemuLog_setActiveLoggingFlags(GetConfig().log_flag.GetValue() | (enabled ? cemuLog_getFlag(LogType::UnsupportedAPI) : 0));
+}

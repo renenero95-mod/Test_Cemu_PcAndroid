@@ -140,10 +140,12 @@ VKFUNC_INSTANCE(vkCreateAndroidSurfaceKHR);
 #elif BOOST_OS_LINUX || BOOST_OS_BSD
 VKFUNC_INSTANCE(vkCreateXlibSurfaceKHR);
 VKFUNC_INSTANCE(vkCreateXcbSurfaceKHR);
+
 #ifdef HAS_WAYLAND
 VKFUNC_INSTANCE(vkCreateWaylandSurfaceKHR);
-#endif // HAS_WAYLAND
-#endif // BOOST_OS_LINUX || BOOST_OS_BSD
+#endif
+
+#endif
 
 #if BOOST_OS_WINDOWS
 VKFUNC_INSTANCE(vkCreateWin32SurfaceKHR);
@@ -196,13 +198,11 @@ VKFUNC_DEVICE(vkCmdPipelineBarrier2KHR);
 VKFUNC_DEVICE(vkCmdBeginRenderingKHR);
 VKFUNC_DEVICE(vkCmdEndRenderingKHR);
 
+// ext_attachment_feedback_loop_dynamic_state
+VKFUNC_DEVICE(vkCmdSetAttachmentFeedbackLoopEnableEXT);
+
 // khr_present_wait
 VKFUNC_DEVICE(vkWaitForPresentKHR);
-
-// transform feedback extension
-VKFUNC_DEVICE(vkCmdBindTransformFeedbackBuffersEXT);
-VKFUNC_DEVICE(vkCmdBeginTransformFeedbackEXT);
-VKFUNC_DEVICE(vkCmdEndTransformFeedbackEXT);
 
 // query
 VKFUNC_DEVICE(vkCreateQueryPool);
