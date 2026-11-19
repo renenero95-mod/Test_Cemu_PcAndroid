@@ -113,6 +113,14 @@ fun GamesListScreen(
             FilledSearchToolbar(
                 actions = {
                     GameListToolBarActionsMenu(
+                        refreshGames = {
+                            coroutineScope.launch {
+                                refreshing = true
+                                gamesListViewModel.refreshGames()
+                                delay(1500)
+                                refreshing = false
+                            }
+                        },
                         goToSettings = goToSettings,
                         goToTitleManager = goToTitleManager,
                         goToGraphicPacks = goToGraphicPacks,
@@ -387,6 +395,7 @@ private fun GameContextMenu(
 
 @Composable
 private fun GameListToolBarActionsMenu(
+    refreshGames: () -> Unit,
     openCemuFolder: () -> Unit,
     shareLogFile: () -> Unit,
     goToSettings: () -> Unit,
@@ -420,6 +429,10 @@ private fun GameListToolBarActionsMenu(
         expanded = expandMenu,
         onDismissRequest = { expandMenu = false }
     ) {
+        DropdownMenuItem(
+            onClick = refreshGames,
+            text = tr("Refresh game list")
+        )
         DropdownMenuItem(
             onClick = goToSettings,
             text = tr("Settings")

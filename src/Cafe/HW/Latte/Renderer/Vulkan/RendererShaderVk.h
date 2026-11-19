@@ -32,6 +32,7 @@ public:
 	static void Shutdown();
 
 	VkShaderModule& GetShaderModule() { return m_shader_module; }
+	const std::string& GetGlslCode() const { return m_glslCode; }
 
 	static inline FSpinlock s_dependencyLock;
 

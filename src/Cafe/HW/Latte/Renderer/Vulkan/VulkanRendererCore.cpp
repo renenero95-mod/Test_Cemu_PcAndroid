@@ -1363,6 +1363,58 @@ void VulkanRenderer::draw_beginSequence()
 		m_state.drawSequenceSkip = true;
 }
 
+// issues the draw call. For pipelines that need emulated instance divisors (see PipelineInfo::emulatedInstanceDivisors) the draw is split
+// into groups of instances that read the same element of the affected vertex buffers
+void VulkanRenderer::draw_submit(const PipelineInfo* pipeline_info, bool indexed, uint32 hostIndexCount, uint32 count, uint32 baseVertex, uint32 baseInstance, uint32 instanceCount)
+{
+	const auto& divisors = pipeline_info->emulatedInstanceDivisors;
+	bool canEmulate = !divisors.empty() && !m_useHostMemoryForCache && instanceCount > 0;
+	if (canEmulate)
+	{
+		for (const auto& divisor : divisors)
+		{
+			if (divisor.bufferIndex >= Latte::GPU_LIMITS::NUM_VERTEX_BUFFERS || m_state.currentVertexBinding[divisor.bufferIndex].offset == 0xFFFFFFFF)
+				canEmulate = false;
+		}
+	}
+	if (!canEmulate)
+	{
+		if (indexed)
+			vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, instanceCount, 0, baseVertex, baseInstance);
+		else
+			vkCmdDraw(m_state.currentCommandBuffer, count, instanceCount, baseVertex, baseInstance);
+		return;
+	}
+
+	VkBuffer vertexBuffer = m_bufferCache;
+	uint32 firstInGroup = 0;
+	while (firstInGroup < instanceCount)
+	{
+		// the group ends where any of the affected buffers moves on to its next element
+		uint32 groupEnd = instanceCount;
+		for (const auto& divisor : divisors)
+			groupEnd = std::min(groupEnd, (firstInGroup / divisor.divisor + 1) * divisor.divisor);
+		for (const auto& divisor : divisors)
+		{
+			const uint32 element = baseInstance + firstInGroup / divisor.divisor;
+			VkDeviceSize bindOffset = static_cast<VkDeviceSize>(m_state.currentVertexBinding[divisor.bufferIndex].offset) + static_cast<VkDeviceSize>(element) * divisor.stride;
+			vkCmdBindVertexBuffers(m_state.currentCommandBuffer, divisor.bufferIndex, 1, &vertexBuffer, &bindOffset);
+		}
+		const uint32 groupInstanceCount = groupEnd - firstInGroup;
+		if (indexed)
+			vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, groupInstanceCount, 0, baseVertex, baseInstance + firstInGroup);
+		else
+			vkCmdDraw(m_state.currentCommandBuffer, count, groupInstanceCount, baseVertex, baseInstance + firstInGroup);
+		firstInGroup = groupEnd;
+	}
+	// restore the bindings tracked in m_state
+	for (const auto& divisor : divisors)
+	{
+		VkDeviceSize bindOffset = m_state.currentVertexBinding[divisor.bufferIndex].offset;
+		vkCmdBindVertexBuffers(m_state.currentCommandBuffer, divisor.bufferIndex, 1, &vertexBuffer, &bindOffset);
+	}
+}
+
 void VulkanRenderer::draw_execute_first(uint32 baseVertex, uint32 baseInstance, uint32 instanceCount, uint32 count, MPTR indexDataMPTR, Latte::LATTE_VGT_DMA_INDEX_TYPE::E_INDEX_TYPE indexType, const LatteDrawcallContext& drawcallContext)
 {
 	if (m_state.drawSequenceSkip)
@@ -1524,10 +1576,7 @@ void VulkanRenderer::draw_execute_first(uint32 baseVertex, uint32 baseInstance, 
 		vkCmdBindDescriptorSets(m_state.currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkObjPipeline->m_pipelineLayout, 2, 1, &geometryDS->m_vkObjDescriptorSet->descriptorSet, numDynOffsets, dynamicOffsets);
 	}
 	// draw
-	if (hostIndexType != INDEX_TYPE::NONE)
-		vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, instanceCount, 0, baseVertex, baseInstance);
-	else
-		vkCmdDraw(m_state.currentCommandBuffer, count, instanceCount, baseVertex, baseInstance);
+	draw_submit(pipeline_info, hostIndexType != INDEX_TYPE::NONE, hostIndexCount, count, baseVertex, baseInstance, instanceCount);
 	LatteStreamout_FinishDrawcall(m_useHostMemoryForCache);
 }
 
@@ -1747,10 +1796,7 @@ void VulkanRenderer::draw_execute_continued(uint32 baseVertex, uint32 baseInstan
 	}
 
 	// draw
-	if (hostIndexType != INDEX_TYPE::NONE)
-		vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, instanceCount, 0, baseVertex, baseInstance);
-	else
-		vkCmdDraw(m_state.currentCommandBuffer, count, instanceCount, baseVertex, baseInstance);
+	draw_submit(pipeline_info, hostIndexType != INDEX_TYPE::NONE, hostIndexCount, count, baseVertex, baseInstance, instanceCount);
 
 	LatteStreamout_FinishDrawcall(m_useHostMemoryForCache);
 }

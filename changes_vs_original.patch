@@ -201,10 +201,10 @@ index 24148c0..3df77b1 100644
 +| MACOS_BUNDLE | macOS executable will be an application bundle | OFF     |
 diff --git a/FIX_SPIEGAZIONE.md b/FIX_SPIEGAZIONE.md
 new file mode 100644
-index 0000000..a76f601
+index 0000000..bde3cd4
 --- /dev/null
 +++ b/FIX_SPIEGAZIONE.md
-@@ -0,0 +1,91 @@
+@@ -0,0 +1,112 @@
 +# FIX_SPIEGAZIONE.md — cosa è stato cambiato e perché
 +Data: 2026-11-16 · Per un'AI che riprende il lavoro · Albero di partenza: zip `CemuFixerAPC-android-port.zip` (snapshot PR #1909 + modifiche locali dell'utente)
 +
@@ -296,12 +296,33 @@ index 0000000..a76f601
 +| D3 | `Vulkan/VulkanRenderer.cpp` | Il log di avvio ora riporta se il driver supporta il *divisore degli attributi vertice* (`instanceRateDivisor`, `nonZeroFirstInstance`, `maxDivisor`). Se non è supportato, i draw instanziati con divisore ≠ 1 vengono renderizzati male: **ipotesi** per il paracadute invisibile di Mario Kart. Upstream (già nel merge) ha aggiunto il supporto: il problema potrebbe essere già risolto, va riprovato |
 +
 +**Cosa provare (in ordine):** 1) nuova build; 2) Zelda: profilo del gioco → disattivare *Load shared libraries*; 3) Watch Dogs/NSLU: profilo → *CPU mode* = Single-core recompiler, poi Interpreter (se il crash sparisce è il JIT); 4) rimandare il nuovo log (ora contiene i dettagli del guasto); 5) Zelda update/DLC: Title manager → "+" → *Import update or DLC from ZIP*, oppure *Install from folder* scegliendo la cartella che contiene update/DLC; 6) Mario Kart: riprovare (il merge porta il supporto al divisore) e mandare il log con la riga "vertex attribute divisor".
++
++
++## 8. Aggiornamento dopo i secondi log (build v2.1 sul telefono)
++**Cosa dicono i nuovi log (con la diagnostica di crash):**
++- **Watch Dogs (avvio) e New Super Luigi U (pulsante):** `SIGSEGV` `SEGV_ACCERR` nella prima pagina di memoria guest non mappata: indirizzo guest `0x494` (WD) e `0x18` (NSLU), cioè **il gioco legge puntatore nullo + offset** (`r3 = 0`), eseguito dall'interprete nella libreria (`+0xdd4fc8`, chiamato da `__OSFiberThreadEntry`). Entrambi con *Load shared libraries: true*. Un puntatore nullo arriva al gioco quando una chiamata di sistema restituisce qualcosa di diverso da quanto atteso (in NSLU subito prima c'è `IOSU-Boss: Running task plyrepo`).
++- **Perché "Load shared libraries" era acceso senza che la schermata lo mostrasse:** l'interfaccia Android legge `value_or(false)` (NativeGameTitles.cpp:206), il motore usava `value_or(true)` (ActiveSettings.cpp). Per i giochi senza impostazione nel profilo la schermata diceva "spento" ma il motore caricava le librerie reali da `cafeLibs/` (con cui Watch Dogs/NSLU/Zelda si comportano male).
++- **Watch Dogs multi-core, durante il filmato:** `SIGSEGV` in `coreinit::__FSUpdateQueue` con puntatore host corrotto (registri con dati casuali): condizione di gara / memoria corrotta nella coda dei comandi del file system, **non risolta**; l'ARM64 ha un ordinamento di memoria più debole di x86.
++- **Mario Kart:** `Failed to create graphics pipeline. Error -13` (VK_ERROR_UNKNOWN) in coppie, negli stessi istanti in cui compaiono i paracadute (14:51:24-26 e 14:51:38-39); in più l'Adreno 740 **non supporta** il divisore degli attributi vertice (`maxDivisor 0`). L'aliante "trasparente, senza colori" è compatibile con entrambe le cose.
++- **Zelda con bypass:** l'ultima chiamata non supportata è `sysapp.SYSLaunchMenu` (il gioco chiede di tornare al menu dopo il messaggio). Con l'update estratto nella cartella dei giochi il messaggio sparisce: la causa è l'update mancante; non è un controllo del sistema aggirabile senza conoscere la verifica del gioco.
++
++**Modifiche di questa versione:**
++| ID | File | Cosa fa |
++|---|---|---|
++| V1 | `Vulkan/VulkanPipelineCompiler.cpp`, `VulkanRendererCore.cpp`, `VulkanRenderer.h` | **Emulazione del divisore degli attributi vertice** quando il driver non lo supporta (Adreno di serie): la pipeline legge un solo elemento (stride 0) e `draw_submit` spezza il draw in gruppi di istanze, spostando l'offset del vertex buffer a ogni gruppo (`element = baseInstance + i/divisore`, `firstInstance = baseInstance + inizio gruppo`; più binding con divisori diversi spezzano ai confini di ciascuno; offset originali ripristinati dopo). Attiva solo per le pipeline con divisore > 1 senza estensione e non per l'accesso diretto alla memoria host. **Non provato su telefono.** Riga di log: "emulating vertex attribute divisors..." |
++| V2 | `VulkanPipelineCompiler.cpp`, `RendererShader.h`, `RendererShaderVk.h` | Se `vkCreateGraphicsPipelines` dà `VK_ERROR_UNKNOWN` (-13) si riprova senza pipeline cache; se fallisce ancora il log riporta gli hash di vertex/pixel/geometry shader e il GLSL viene salvato in `shaderDump/failedPipelines/<hash>_<stage>.glsl` (nella cartella dati di Cemu) |
++| S1 | `config/ActiveSettings.cpp` | Su Android "Load shared libraries" è spento quando il profilo non lo imposta (coerente con la schermata) |
++| J1 | `Recompiler/PPCRecompiler.cpp` | Barriera `memory_order_release` prima di pubblicare i puntatori al codice ricompilato nella jump table |
++| G1 | `games/list/GamesListScreen.kt` | Voce **Refresh game list** nel menu dei giochi (equivale al tirare giù la lista): rilegge le cartelle, così un update/DLC appena estratto viene trovato senza riaprire l'app |
++| Z3 | `Cafe/Filesystem/fsc.cpp` | Con *Bypass system update check* attivo il log riporta ogni file/cartella che il gioco cerca e non trova (`FS: not found: ...`) |
++
++**Cosa mandare dopo la prossima build:** log di Mario Kart con un paracadute in gioco (cerca "emulating vertex attribute divisors" e "Failed to create graphics pipeline" con gli hash; la cartella `shaderDump/failedPipelines` se creata); log di Watch Dogs/NSLU con *Load shared libraries* spento (ora è il default).
 diff --git a/check.md b/check.md
 new file mode 100644
-index 0000000..94b4b4d
+index 0000000..fc9e8b9
 --- /dev/null
 +++ b/check.md
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,51 @@
 +# check.md — CemuFixerAPC android-port
 +Aggiornato: 2026-11-18 · Fase: **v2 dopo i test su telefono: crash JIT da diagnosticare, import update/DLC, opzione bypass**
 +
@@ -317,6 +338,8 @@ index 0000000..94b4b4d
 +- Update/DLC: menu "+" → *Import update or DLC from ZIP* e *Install from folder* (cerca update/DLC dentro qualunque cartella).
 +- Mario Kart: il log ora dice se l'Adreno supporta il divisore degli attributi vertice (ipotesi paracadute); il merge porta già il supporto upstream, da riprovare.
 +- Mario Kart (paracadute invisibile): non risolto; Adreno 740 senza `attachment_feedback_loop`/`pipeline_robustness`, driver 2023: provare driver custom.
++
++- v2.2: emulazione del divisore degli attributi (Vulkan), diagnostica e retry delle pipeline fallite (-13), "Load shared libraries" spento di default su Android (prima la schermata diceva spento ma il motore lo accendeva), barriera memoria JIT, menu "Refresh game list", log dei file non trovati col bypass. Dettagli in `FIX_SPIEGAZIONE.md` §8.
 +
 +## Fatto (v1)
 +1. **Scoperta:** lo zip era la PR con solo parte di upstream. Nel bundle `audit_evidence` ho trovato gli alberi completi di upstream/main e PR → **merge a tre vie** (base = PR − patch): **295 file aggiornati, 4 conflitti** (swkbd, CMake×2, README) risolti. Dettagli: `FIX_SPIEGAZIONE.md` §1-2.
@@ -1133,6 +1156,27 @@ index e7a4c9b..df89eb7 100644
  }
  unsigned char WUHBReader::NormalizeChar(unsigned char c)
  {
+diff --git a/src/Cafe/Filesystem/fsc.cpp b/src/Cafe/Filesystem/fsc.cpp
+index 031f2fb..272e485 100644
+--- a/src/Cafe/Filesystem/fsc.cpp
++++ b/src/Cafe/Filesystem/fsc.cpp
+@@ -1,5 +1,6 @@
+ #include "Cafe/Filesystem/fsc.h"
+ #include "Cafe/Filesystem/FST/fstUtil.h"
++#include "config/CemuConfig.h"
+ 
+ struct FSCMountPathNode
+ {
+@@ -435,6 +436,9 @@ FSCVirtualFile* fsc_open(const char* path, FSC_ACCESS_FLAG accessFlags, sint32*
+ 	}
+ 	fscLeave();
+ 	*fscStatus = FSC_STATUS_FILE_NOT_FOUND;
++	// diagnostic aid of the "Bypass system update check" setting: shows which file or folder a game looked for and did not find
++	if (GetConfig().bypass_system_update_check)
++		cemuLog_log(LogType::Force, "FS: not found: {}", path);
+ 	return nullptr;
+ }
+ 
 diff --git a/src/Cafe/GraphicPack/GraphicPack2Patches.h b/src/Cafe/GraphicPack/GraphicPack2Patches.h
 index 4550506..c5bdca1 100644
 --- a/src/Cafe/GraphicPack/GraphicPack2Patches.h
@@ -6380,7 +6424,7 @@ index 96b5143..45c5001 100644
  		{
  			uint32 LI;
 diff --git a/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.cpp b/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.cpp
-index fae5127..6be50ec 100644
+index fae5127..bad0960 100644
 --- a/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.cpp
 +++ b/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.cpp
 @@ -117,10 +117,12 @@ void PPCRecompiler_recompileIfUnvisited(uint32 enterAddress)
@@ -6408,7 +6452,16 @@ index fae5127..6be50ec 100644
  	PPCRecompiler_NativeRegisterAllocatorPass(ppcImlGenContext);
  
  	return true;
-@@ -628,8 +632,8 @@ void PPCRecompiler_initPlatform()
+@@ -395,6 +399,8 @@ bool PPCRecompiler_makeRecompiledFunctionActive(uint32 initialEntryPoint, PPCFun
+ 
+ 	// update jump table and remember which entries we updated
+ 	cemu_assert_debug(ppcRecFunc->jumpTableEntries.empty());
++	// the generated code must be visible to the other cores before they can see the pointers to it (weakly ordered CPUs like ARM64)
++	std::atomic_thread_fence(std::memory_order_release);
+ 	for (auto& itr : entryPoints)
+ 	{
+ 		ppcRecompilerInstanceData->ppcRecompilerDirectJumpTable[itr.first / 4] = (PPCREC_JUMP_ENTRY)((uint8*)ppcRecFunc->x86Code + itr.second);
+@@ -628,8 +634,8 @@ void PPCRecompiler_initPlatform()
  	ppcRecompilerInstanceData->_x64XMM_andFloatAbsMaskBottom[1] = 0xFFFFFFFF;
  	ppcRecompilerInstanceData->_x64XMM_andFloatAbsMaskBottom[2] = 0xFFFFFFFF;
  	ppcRecompilerInstanceData->_x64XMM_andFloatAbsMaskBottom[3] = 0xFFFFFFFF;
@@ -6419,7 +6472,7 @@ index fae5127..6be50ec 100644
  	ppcRecompilerInstanceData->_x64XMM_constDouble1_1[0] = 1.0;
  	ppcRecompilerInstanceData->_x64XMM_constDouble1_1[1] = 1.0;
  	ppcRecompilerInstanceData->_x64XMM_constDouble0_0[0] = 0.0;
-@@ -652,6 +656,7 @@ void PPCRecompiler_initPlatform()
+@@ -652,6 +658,7 @@ void PPCRecompiler_initPlatform()
  	// mxcsr
  	ppcRecompilerInstanceData->_x64XMM_mxCsr_ftzOn = 0x1F80 | 0x8000;
  	ppcRecompilerInstanceData->_x64XMM_mxCsr_ftzOff = 0x1F80;
@@ -14725,6 +14778,19 @@ index 9203b3b..293d959 100644
  
  	return v;
  }
+diff --git a/src/Cafe/HW/Latte/Renderer/RendererShader.h b/src/Cafe/HW/Latte/Renderer/RendererShader.h
+index 2bc6676..da9ec7d 100644
+--- a/src/Cafe/HW/Latte/Renderer/RendererShader.h
++++ b/src/Cafe/HW/Latte/Renderer/RendererShader.h
+@@ -13,6 +13,8 @@ public:
+ 	virtual ~RendererShader() = default;
+ 
+ 	ShaderType GetType() const { return m_type; }
++	uint64 GetBaseHash() const { return m_baseHash; }
++	uint64 GetAuxHash() const { return m_auxHash; }
+ 	
+ 	virtual void PreponeCompilation(bool isRenderThread) = 0; // if shader not yet compiled, compile it synchronously (if possible) or alternatively wait for compilation. After this function IsCompiled() is guaranteed to be true
+ 	virtual bool IsCompiled() = 0;
 diff --git a/src/Cafe/HW/Latte/Renderer/Vulkan/LatteTextureVk.cpp b/src/Cafe/HW/Latte/Renderer/Vulkan/LatteTextureVk.cpp
 index c6a9b27..86b4d75 100644
 --- a/src/Cafe/HW/Latte/Renderer/Vulkan/LatteTextureVk.cpp
@@ -14752,6 +14818,18 @@ index b0d7487..2d6d25f 100644
  
  	VKRObjectTexture* vkObjTex{};
  	VkImageLayout m_defaultLayout{ VK_IMAGE_LAYOUT_GENERAL }; // the targetted long term layout of the texture. Can be either VK_IMAGE_LAYOUT_GENERAL or VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT for potential rendertargets if supported
+diff --git a/src/Cafe/HW/Latte/Renderer/Vulkan/RendererShaderVk.h b/src/Cafe/HW/Latte/Renderer/Vulkan/RendererShaderVk.h
+index e2e1169..501adc0 100644
+--- a/src/Cafe/HW/Latte/Renderer/Vulkan/RendererShaderVk.h
++++ b/src/Cafe/HW/Latte/Renderer/Vulkan/RendererShaderVk.h
+@@ -32,6 +32,7 @@ public:
+ 	static void Shutdown();
+ 
+ 	VkShaderModule& GetShaderModule() { return m_shader_module; }
++	const std::string& GetGlslCode() const { return m_glslCode; }
+ 
+ 	static inline FSpinlock s_dependencyLock;
+ 
 diff --git a/src/Cafe/HW/Latte/Renderer/Vulkan/TextureReadbackVk.cpp b/src/Cafe/HW/Latte/Renderer/Vulkan/TextureReadbackVk.cpp
 index 81281eb..4e780a8 100644
 --- a/src/Cafe/HW/Latte/Renderer/Vulkan/TextureReadbackVk.cpp
@@ -14938,7 +15016,7 @@ index cbe71ad..b252257 100644
  	{
  		cemuLog_log(LogType::Force, "Vulkan loader not available.");
 diff --git a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.cpp b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.cpp
-index 2800b81..a1902c1 100644
+index 2800b81..55e8060 100644
 --- a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.cpp
 +++ b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.cpp
 @@ -126,54 +126,54 @@ PipelineCompiler::~PipelineCompiler()
@@ -15019,6 +15097,15 @@ index 2800b81..a1902c1 100644
  		assert_dbg();
  		return VK_FORMAT_UNDEFINED;
  	}
+@@ -364,7 +364,7 @@ bool PipelineCompiler::InitShaderStages(VulkanRenderer* vkRenderer, RendererShad
+ 	return true;
+ }
+ 
+-void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader)
++void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader, PipelineInfo* pipelineInfo)
+ {
+ 	vertexInputAttributeDescription.reserve(16);
+ 	vertexInputBindingDescription.reserve(fetchShader->bufferGroups.size());
 @@ -372,6 +372,7 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
  	for (auto& bufferGroup : fetchShader->bufferGroups)
  	{
@@ -15039,7 +15126,7 @@ index 2800b81..a1902c1 100644
  			}
  		}
  
-@@ -421,6 +423,18 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
+@@ -421,6 +423,30 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
  		}
  		entry.binding = bufferIndex;
  		vertexInputBindingDescription.emplace_back(entry);
@@ -15048,7 +15135,19 @@ index 2800b81..a1902c1 100644
 +		{
 +			uint32 instanceDivisor = *bufferInstanceDivisor;
 +			auto vkRenderer = VulkanRenderer::GetInstance();
-+			if (instanceDivisor == 0 || instanceDivisor > 0xFFFF || !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
++			if (instanceDivisor > 1 && !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
++			{
++				// the driver cannot apply the divisor: read a single element per draw and let draw_submit advance it
++				static bool s_loggedEmulation = false;
++				if (!s_loggedEmulation)
++				{
++					s_loggedEmulation = true;
++					cemuLog_log(LogType::Force, "Vulkan: emulating vertex attribute divisors by splitting instanced draws (first divisor: {})", instanceDivisor);
++				}
++				vertexInputBindingDescription.back().stride = 0;
++				pipelineInfo->emulatedInstanceDivisors.push_back({bufferIndex, instanceDivisor, bufferStride});
++			}
++			else if (instanceDivisor == 0 || instanceDivisor > 0xFFFF || !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
 +			{
 +				cemuLog_log(LogType::Force, "Vulkan: Unsupported vertex attribute divisor {}", instanceDivisor);
 +			}
@@ -15058,7 +15157,7 @@ index 2800b81..a1902c1 100644
  	}
  
  	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-@@ -428,6 +442,13 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
+@@ -428,6 +454,13 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
  	vertexInputInfo.pVertexBindingDescriptions = vertexInputBindingDescription.data();
  	vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescription.size();
  	vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescription.data();
@@ -15072,8 +15171,80 @@ index 2800b81..a1902c1 100644
  }
  
  void PipelineCompiler::InitInputAssemblyState(const Latte::LATTE_VGT_PRIMITIVE_TYPE::E_PRIMITIVE_TYPE primitiveMode)
+@@ -853,7 +886,7 @@ bool PipelineCompiler::InitFromCurrentGPUState(PipelineInfo* pipelineInfo, const
+ 	// ##########################################################################################################################################
+ 
+ 	pipelineInfo->primitiveMode = primitiveMode;
+-	InitVertexInputState(latteRegister, pipelineInfo->vertexShader, pipelineInfo->fetchShader);
++	InitVertexInputState(latteRegister, pipelineInfo->vertexShader, pipelineInfo->fetchShader, pipelineInfo);
+ 	InitInputAssemblyState(primitiveMode);
+ 	InitViewportState();
+ 	bool usesDepthBias = false;
+@@ -1000,6 +1033,19 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
+ 		retryCount++;
+ 	}
+ 
++	if (result == VK_ERROR_UNKNOWN)
++	{
++		// some drivers (observed on Adreno) report VK_ERROR_UNKNOWN: try once more without the pipeline cache
++		VkPipeline retryPipeline = VK_NULL_HANDLE;
++		const VkResult retryResult = vkCreateGraphicsPipelines(vkRenderer->m_logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &retryPipeline);
++		if (retryResult == VK_SUCCESS)
++		{
++			cemuLog_log(LogType::Force, "Graphics pipeline created after retrying without the pipeline cache");
++			pipeline = retryPipeline;
++			result = VK_SUCCESS;
++		}
++	}
++
+ 	if (result == VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT)
+ 	{
+ 		return false;
+@@ -1010,7 +1056,9 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
+ 	}
+ 	else
+ 	{
+-		cemuLog_log(LogType::Force, "Failed to create graphics pipeline. Error {}", (sint32)result);
++		cemuLog_log(LogType::Force, "Failed to create graphics pipeline. Error {} (vertex shader {:016x}, pixel shader {:016x}, geometry shader {:016x})", (sint32)result,
++			m_vkVertexShader ? m_vkVertexShader->GetBaseHash() : 0, m_vkPixelShader ? m_vkPixelShader->GetBaseHash() : 0, m_vkGeometryShader ? m_vkGeometryShader->GetBaseHash() : 0);
++		DumpShadersOfFailedPipeline();
+ 		cemu_assert_debug(false);
+ 		return true; // true indicates that caller should no longer attempt to compile this pipeline again
+ 	}
+@@ -1037,6 +1085,31 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
+ 	return true;
+ }
+ 
++// saves the GLSL of the shaders of a pipeline that the driver refused to create, so the cause can be investigated
++void PipelineCompiler::DumpShadersOfFailedPipeline()
++{
++	static std::mutex s_dumpMutex;
++	static std::unordered_set<uint64> s_dumpedShaders;
++	std::lock_guard lock(s_dumpMutex);
++	const auto dumpShader = [](RendererShaderVk* shader, const char* stageName)
++	{
++		if (!shader)
++			return;
++		const uint64 baseHash = shader->GetBaseHash();
++		if (!s_dumpedShaders.insert(baseHash ^ (static_cast<uint64>(shader->GetType()) << 60)).second)
++			return;
++		std::error_code ec;
++		const fs::path directory = ActiveSettings::GetUserDataPath("shaderDump/failedPipelines");
++		fs::create_directories(directory, ec);
++		std::ofstream file(directory / fmt::format("{:016x}_{}.glsl", baseHash, stageName), std::ios::binary);
++		if (file.is_open())
++			file << shader->GetGlslCode();
++	};
++	dumpShader(m_vkVertexShader, "vertex");
++	dumpShader(m_vkPixelShader, "pixel");
++	dumpShader(m_vkGeometryShader, "geometry");
++}
++
+ void PipelineCompiler::TrackAsCached(uint64 baseHash, uint64 pipelineStateHash)
+ {
+ 	auto& pipelineCache = VulkanPipelineStableCache::GetInstance();
 diff --git a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.h b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.h
-index f4240a5..583c1fe 100644
+index f4240a5..1c6b875 100644
 --- a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.h
 +++ b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanPipelineCompiler.h
 @@ -6,7 +6,7 @@ class PipelineCompiler : public VKRMoveableRefCounter
@@ -15085,7 +15256,25 @@ index f4240a5..583c1fe 100644
  	bool ConsumesBlendConstants(VkBlendFactor blendFactor);
  
  	void CreateDescriptorSetLayout(VulkanRenderer* vkRenderer, LatteDecompilerShader* shader, VkDescriptorSetLayout& layout, PipelineInfo* vkrPipelineInfo);
-@@ -61,6 +61,8 @@ public:
+@@ -21,7 +21,7 @@ private:
+ 
+ 	/* vertex input state */
+ 
+-	void InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader);
++	void InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader, PipelineInfo* pipelineInfo);
+ 	void InitInputAssemblyState(const Latte::LATTE_VGT_PRIMITIVE_TYPE::E_PRIMITIVE_TYPE primitiveMode);
+ 	void InitViewportState();
+ 	void InitRasterizerState(const LatteContextRegister& latteRegister, VulkanRenderer* vkRenderer, bool isPrimitiveRect, bool& usesDepthBias);
+@@ -31,6 +31,8 @@ private:
+ 	void InitDynamicState(PipelineInfo* pipelineInfo, bool usesBlendConstants, bool usesDepthBias);
+ 
+ public:
++	void DumpShadersOfFailedPipeline();
++
+ 	PipelineCompiler();
+ 	~PipelineCompiler();
+ 
+@@ -61,6 +63,8 @@ public:
  	std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription;
  	std::vector<VkVertexInputBindingDescription> vertexInputBindingDescription;
  	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -15094,7 +15283,7 @@ index f4240a5..583c1fe 100644
  
  	/* input assembly state */
  	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-@@ -91,4 +93,4 @@ public:
+@@ -91,4 +95,4 @@ public:
  	// returns true if the shader was compiled (even if errors occurred)
  	bool Compile(bool forceCompile, bool isRenderThread, bool showInOverlay);
  
@@ -15487,10 +15676,28 @@ index 75e8777..e35941d 100644
  	VkBuffer attrBuffer = fixedBuffer;
  	VkDeviceSize attrOffset = offset;
 diff --git a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.h b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.h
-index 160f7d4..af25393 100644
+index 160f7d4..fb90b8d 100644
 --- a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.h
 +++ b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.h
-@@ -170,6 +170,7 @@ public:
+@@ -107,6 +107,17 @@ public:
+ 
+ 	VKRObjectPipeline* m_vkrObjPipeline;
+ 
++	// vertex buffers with an instance divisor > 1 on a GPU/driver without VK_KHR_vertex_attribute_divisor (e.g. stock Adreno drivers).
++	// The pipeline reads one element per draw (stride 0) and VulkanRenderer::draw_submit splits the draw so that every group of
++	// 'divisor' instances reads the next element
++	struct EmulatedInstanceDivisor
++	{
++		uint32 bufferIndex;
++		uint32 divisor;
++		uint32 stride;
++	};
++	std::vector<EmulatedInstanceDivisor> emulatedInstanceDivisors;
++
+ 	LatteDecompilerShader* vertexShader = nullptr;
+ 	LatteDecompilerShader* geometryShader = nullptr;
+ 	LatteDecompilerShader* pixelShader = nullptr;
+@@ -170,6 +181,7 @@ public:
  		VkFormat vkImageFormat;
  		VkImageAspectFlags vkImageAspect;
  		bool isCompressed;
@@ -15498,7 +15705,7 @@ index 160f7d4..af25393 100644
  
  		// texture decoder info
  		TextureDecoder* decoder;
-@@ -180,10 +181,10 @@ public:
+@@ -180,10 +192,10 @@ public:
  
  	struct DeviceInfo
  	{
@@ -15511,7 +15718,7 @@ index 160f7d4..af25393 100644
  		}
  
  		std::string name;
-@@ -249,6 +250,7 @@ public:
+@@ -249,6 +261,7 @@ public:
  
  	void Flush(bool waitIdle = false) override;
  	void NotifyLatteCommandProcessorIdle() override;
@@ -15519,7 +15726,7 @@ index 160f7d4..af25393 100644
  
  	uint64 GenUniqueId(); // return unique id (uses incrementing counter)
  
-@@ -345,7 +347,7 @@ public:
+@@ -345,7 +358,7 @@ public:
  	void bufferCache_upload(uint8* buffer, sint32 size, uint32 bufferOffset) override;
  	void bufferCache_copy(uint32 srcOffset, uint32 dstOffset, uint32 size) override;
  
@@ -15528,7 +15735,7 @@ index 160f7d4..af25393 100644
  	void buffer_bindVertexStrideWorkaroundBuffer(VkBuffer fixedBuffer, uint32 offset, uint32 bufferIndex, uint32 size);
  	std::pair<VkBuffer, uint32> buffer_genStrideWorkaroundVertexBuffer(MPTR buffer, uint32 size, uint32 oldStride);
  	void buffer_bindUniformBuffer(LatteConst::ShaderType shaderType, uint32 bufferIndex, uint32 offset, uint32 size) override;
-@@ -388,6 +390,7 @@ private:
+@@ -388,6 +401,7 @@ private:
  		VkDescriptorSetInfo* activePixelDS{ nullptr };
  		VkDescriptorSetInfo* activeGeometryDS{ nullptr };
  		bool descriptorSetsChanged{ false };
@@ -15536,7 +15743,7 @@ index 160f7d4..af25393 100644
  		VkImageAspectFlags feedbackLoopImageAspect{0xFFFFFFFF};
  		// viewport and scissor box
  		VkViewport currentViewport{};
-@@ -397,7 +400,7 @@ private:
+@@ -397,7 +411,7 @@ private:
  		struct
  		{
  			uint32 offset;
@@ -15545,7 +15752,7 @@ index 160f7d4..af25393 100644
  
  		// index buffer
  		Renderer::INDEX_TYPE activeIndexType{};
-@@ -427,6 +430,7 @@ private:
+@@ -427,6 +441,7 @@ private:
  
  		// invalidation / flushing
  		uint64 currentFlushIndex{0};
@@ -15553,7 +15760,7 @@ index 160f7d4..af25393 100644
  		bool requestFlush{ false }; // flush after every draw operation. The renderpass dependencies dont handle dependencies across multiple drawcalls inside a single renderpass
  
  		// draw sequence
-@@ -474,6 +478,7 @@ private:
+@@ -474,6 +489,7 @@ private:
  			bool present_wait = false; // VK_KHR_present_wait
  			bool depth_clip_enable = false; // VK_EXT_depth_clip_enable
  			bool pipeline_robustness = false; // VK_EXT_pipeline_robustness
@@ -15561,8 +15768,16 @@ index 160f7d4..af25393 100644
  			bool attachment_feedback_loop_layout = false; // VK_EXT_attachment_feedback_loop_layout
  			bool attachment_feedback_loop_dynamic_state = false; // VK_EXT_attachment_feedback_loop_dynamic_state (this is forced to false if VK_EXT_attachment_feedback_loop_layout is not supported)
  		}deviceExtensions;
+@@ -558,6 +574,7 @@ private:
+ 	void draw_updateVertexBuffersDirectAccess();
+ 	void draw_updateUniformBuffersDirectAccess(LatteDecompilerShader* shader, const uint32 uniformBufferRegOffset, LatteConst::ShaderType shaderType);
+ 
++	void draw_submit(const PipelineInfo* pipeline_info, bool indexed, uint32 hostIndexCount, uint32 count, uint32 baseVertex, uint32 baseInstance, uint32 instanceCount);
+ 	void draw_prepareDynamicOffsetsForDescriptorSet(uint32 shaderStageIndex, uint32* dynamicOffsets, sint32& numDynOffsets, const PipelineInfo* pipeline_info);
+ 	VkDescriptorSetInfo* draw_getOrCreateDescriptorSet(PipelineInfo* pipeline_info, LatteDecompilerShader* shader);
+ 	void draw_prepareDescriptorSets(PipelineInfo* pipeline_info, VkDescriptorSetInfo*& vertexDS, VkDescriptorSetInfo*& pixelDS, VkDescriptorSetInfo*& geometryDS);
 diff --git a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRendererCore.cpp b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRendererCore.cpp
-index 2b50d88..4d0de8a 100644
+index 2b50d88..a25f41c 100644
 --- a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRendererCore.cpp
 +++ b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRendererCore.cpp
 @@ -125,6 +125,14 @@ uint64 VulkanRenderer::draw_calculateGraphicsPipelineHash(const LatteFetchShader
@@ -15684,7 +15899,66 @@ index 2b50d88..4d0de8a 100644
  	}
  
  	vkObjRenderPass->flagForCurrentCommandBuffer();
-@@ -1444,6 +1459,7 @@ void VulkanRenderer::draw_execute_first(uint32 baseVertex, uint32 baseInstance,
+@@ -1348,6 +1363,58 @@ void VulkanRenderer::draw_beginSequence()
+ 		m_state.drawSequenceSkip = true;
+ }
+ 
++// issues the draw call. For pipelines that need emulated instance divisors (see PipelineInfo::emulatedInstanceDivisors) the draw is split
++// into groups of instances that read the same element of the affected vertex buffers
++void VulkanRenderer::draw_submit(const PipelineInfo* pipeline_info, bool indexed, uint32 hostIndexCount, uint32 count, uint32 baseVertex, uint32 baseInstance, uint32 instanceCount)
++{
++	const auto& divisors = pipeline_info->emulatedInstanceDivisors;
++	bool canEmulate = !divisors.empty() && !m_useHostMemoryForCache && instanceCount > 0;
++	if (canEmulate)
++	{
++		for (const auto& divisor : divisors)
++		{
++			if (divisor.bufferIndex >= Latte::GPU_LIMITS::NUM_VERTEX_BUFFERS || m_state.currentVertexBinding[divisor.bufferIndex].offset == 0xFFFFFFFF)
++				canEmulate = false;
++		}
++	}
++	if (!canEmulate)
++	{
++		if (indexed)
++			vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, instanceCount, 0, baseVertex, baseInstance);
++		else
++			vkCmdDraw(m_state.currentCommandBuffer, count, instanceCount, baseVertex, baseInstance);
++		return;
++	}
++
++	VkBuffer vertexBuffer = m_bufferCache;
++	uint32 firstInGroup = 0;
++	while (firstInGroup < instanceCount)
++	{
++		// the group ends where any of the affected buffers moves on to its next element
++		uint32 groupEnd = instanceCount;
++		for (const auto& divisor : divisors)
++			groupEnd = std::min(groupEnd, (firstInGroup / divisor.divisor + 1) * divisor.divisor);
++		for (const auto& divisor : divisors)
++		{
++			const uint32 element = baseInstance + firstInGroup / divisor.divisor;
++			VkDeviceSize bindOffset = static_cast<VkDeviceSize>(m_state.currentVertexBinding[divisor.bufferIndex].offset) + static_cast<VkDeviceSize>(element) * divisor.stride;
++			vkCmdBindVertexBuffers(m_state.currentCommandBuffer, divisor.bufferIndex, 1, &vertexBuffer, &bindOffset);
++		}
++		const uint32 groupInstanceCount = groupEnd - firstInGroup;
++		if (indexed)
++			vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, groupInstanceCount, 0, baseVertex, baseInstance + firstInGroup);
++		else
++			vkCmdDraw(m_state.currentCommandBuffer, count, groupInstanceCount, baseVertex, baseInstance + firstInGroup);
++		firstInGroup = groupEnd;
++	}
++	// restore the bindings tracked in m_state
++	for (const auto& divisor : divisors)
++	{
++		VkDeviceSize bindOffset = m_state.currentVertexBinding[divisor.bufferIndex].offset;
++		vkCmdBindVertexBuffers(m_state.currentCommandBuffer, divisor.bufferIndex, 1, &vertexBuffer, &bindOffset);
++	}
++}
++
+ void VulkanRenderer::draw_execute_first(uint32 baseVertex, uint32 baseInstance, uint32 instanceCount, uint32 count, MPTR indexDataMPTR, Latte::LATTE_VGT_DMA_INDEX_TYPE::E_INDEX_TYPE indexType, const LatteDrawcallContext& drawcallContext)
+ {
+ 	if (m_state.drawSequenceSkip)
+@@ -1444,6 +1511,7 @@ void VulkanRenderer::draw_execute_first(uint32 baseVertex, uint32 baseInstance,
  	{
  		// invalid/uninitialized pipeline
  		m_state.activeVertexDS = nullptr;
@@ -15692,7 +15966,19 @@ index 2b50d88..4d0de8a 100644
  		return;
  	}
  
-@@ -1632,7 +1648,7 @@ void VulkanRenderer::draw_execute_continued(uint32 baseVertex, uint32 baseInstan
+@@ -1508,10 +1576,7 @@ void VulkanRenderer::draw_execute_first(uint32 baseVertex, uint32 baseInstance,
+ 		vkCmdBindDescriptorSets(m_state.currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkObjPipeline->m_pipelineLayout, 2, 1, &geometryDS->m_vkObjDescriptorSet->descriptorSet, numDynOffsets, dynamicOffsets);
+ 	}
+ 	// draw
+-	if (hostIndexType != INDEX_TYPE::NONE)
+-		vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, instanceCount, 0, baseVertex, baseInstance);
+-	else
+-		vkCmdDraw(m_state.currentCommandBuffer, count, instanceCount, baseVertex, baseInstance);
++	draw_submit(pipeline_info, hostIndexType != INDEX_TYPE::NONE, hostIndexCount, count, baseVertex, baseInstance, instanceCount);
+ 	LatteStreamout_FinishDrawcall(m_useHostMemoryForCache);
+ }
+ 
+@@ -1632,7 +1697,7 @@ void VulkanRenderer::draw_execute_continued(uint32 baseVertex, uint32 baseInstan
  	if (vkObjPipeline->GetPipeline() == VK_NULL_HANDLE)
  	{
  		// invalid/uninitialized pipeline
@@ -15701,7 +15987,19 @@ index 2b50d88..4d0de8a 100644
  		return;
  	}
  
-@@ -1745,6 +1761,7 @@ void VulkanRenderer::draw_execute(uint32 baseVertex, uint32 baseInstance, uint32
+@@ -1731,10 +1796,7 @@ void VulkanRenderer::draw_execute_continued(uint32 baseVertex, uint32 baseInstan
+ 	}
+ 
+ 	// draw
+-	if (hostIndexType != INDEX_TYPE::NONE)
+-		vkCmdDrawIndexed(m_state.currentCommandBuffer, hostIndexCount, instanceCount, 0, baseVertex, baseInstance);
+-	else
+-		vkCmdDraw(m_state.currentCommandBuffer, count, instanceCount, baseVertex, baseInstance);
++	draw_submit(pipeline_info, hostIndexType != INDEX_TYPE::NONE, hostIndexCount, count, baseVertex, baseInstance, instanceCount);
+ 
+ 	LatteStreamout_FinishDrawcall(m_useHostMemoryForCache);
+ }
+@@ -1745,6 +1807,7 @@ void VulkanRenderer::draw_execute(uint32 baseVertex, uint32 baseInstance, uint32
  		draw_execute_first(baseVertex, baseInstance, instanceCount, count, indexDataMPTR, indexType, drawcallContext);
  	else
  		draw_execute_continued(baseVertex, baseInstance, instanceCount, count, indexDataMPTR, indexType, drawcallContext);
@@ -29054,6 +29352,44 @@ index c2e4c91..44c4c53 100644
              MotionEvent.ACTION_MOVE -> {
                  if (currentPointerId == -1) {
                      return false
+diff --git a/src/android/app/src/main/java/info/cemu/cemu/games/list/GamesListScreen.kt b/src/android/app/src/main/java/info/cemu/cemu/games/list/GamesListScreen.kt
+index d64c680..e7a9cb4 100644
+--- a/src/android/app/src/main/java/info/cemu/cemu/games/list/GamesListScreen.kt
++++ b/src/android/app/src/main/java/info/cemu/cemu/games/list/GamesListScreen.kt
+@@ -113,6 +113,14 @@ fun GamesListScreen(
+             FilledSearchToolbar(
+                 actions = {
+                     GameListToolBarActionsMenu(
++                        refreshGames = {
++                            coroutineScope.launch {
++                                refreshing = true
++                                gamesListViewModel.refreshGames()
++                                delay(1500)
++                                refreshing = false
++                            }
++                        },
+                         goToSettings = goToSettings,
+                         goToTitleManager = goToTitleManager,
+                         goToGraphicPacks = goToGraphicPacks,
+@@ -387,6 +395,7 @@ private fun GameContextMenu(
+ 
+ @Composable
+ private fun GameListToolBarActionsMenu(
++    refreshGames: () -> Unit,
+     openCemuFolder: () -> Unit,
+     shareLogFile: () -> Unit,
+     goToSettings: () -> Unit,
+@@ -420,6 +429,10 @@ private fun GameListToolBarActionsMenu(
+         expanded = expandMenu,
+         onDismissRequest = { expandMenu = false }
+     ) {
++        DropdownMenuItem(
++            onClick = refreshGames,
++            text = tr("Refresh game list")
++        )
+         DropdownMenuItem(
+             onClick = goToSettings,
+             text = tr("Settings")
 diff --git a/src/android/app/src/main/java/info/cemu/cemu/graphicpacks/GraphicPacksDownloader.kt b/src/android/app/src/main/java/info/cemu/cemu/graphicpacks/GraphicPacksDownloader.kt
 index 4d127df..4a6b26d 100644
 --- a/src/android/app/src/main/java/info/cemu/cemu/graphicpacks/GraphicPacksDownloader.kt
@@ -29534,6 +29870,24 @@ index 0000000..463f5c3
 +    android:allowGameFpsOverride="false"
 +    android:supportsBatteryGameMode="true"
 +    android:supportsPerformanceGameMode="true" />
+diff --git a/src/config/ActiveSettings.cpp b/src/config/ActiveSettings.cpp
+index 8173d4f..56b1341 100644
+--- a/src/config/ActiveSettings.cpp
++++ b/src/config/ActiveSettings.cpp
+@@ -56,7 +56,13 @@ void ActiveSettings::Init()
+ 
+ bool ActiveSettings::LoadSharedLibrariesEnabled()
+ {
++#if BOOST_PLAT_ANDROID
++	// The Android game profile screen shows this option as off when the profile does not set it (see NativeGameTitles.cpp), so the engine
++	// must not silently load the real system libraries from cafeLibs in that case: with them several games crash or ask for a system update.
++	return g_current_game_profile->ShouldLoadSharedLibraries().value_or(false);
++#else
+ 	return g_current_game_profile->ShouldLoadSharedLibraries().value_or(true);
++#endif
+ }
+ 
+ bool ActiveSettings::DisplayDRCEnabled()
 diff --git a/src/config/CemuConfig.cpp b/src/config/CemuConfig.cpp
 index 17d45b9..470e81d 100644
 --- a/src/config/CemuConfig.cpp

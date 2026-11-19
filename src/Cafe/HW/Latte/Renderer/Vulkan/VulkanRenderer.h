@@ -107,6 +107,17 @@ public:
 
 	VKRObjectPipeline* m_vkrObjPipeline;
 
+	// vertex buffers with an instance divisor > 1 on a GPU/driver without VK_KHR_vertex_attribute_divisor (e.g. stock Adreno drivers).
+	// The pipeline reads one element per draw (stride 0) and VulkanRenderer::draw_submit splits the draw so that every group of
+	// 'divisor' instances reads the next element
+	struct EmulatedInstanceDivisor
+	{
+		uint32 bufferIndex;
+		uint32 divisor;
+		uint32 stride;
+	};
+	std::vector<EmulatedInstanceDivisor> emulatedInstanceDivisors;
+
 	LatteDecompilerShader* vertexShader = nullptr;
 	LatteDecompilerShader* geometryShader = nullptr;
 	LatteDecompilerShader* pixelShader = nullptr;
@@ -563,6 +574,7 @@ private:
 	void draw_updateVertexBuffersDirectAccess();
 	void draw_updateUniformBuffersDirectAccess(LatteDecompilerShader* shader, const uint32 uniformBufferRegOffset, LatteConst::ShaderType shaderType);
 
+	void draw_submit(const PipelineInfo* pipeline_info, bool indexed, uint32 hostIndexCount, uint32 count, uint32 baseVertex, uint32 baseInstance, uint32 instanceCount);
 	void draw_prepareDynamicOffsetsForDescriptorSet(uint32 shaderStageIndex, uint32* dynamicOffsets, sint32& numDynOffsets, const PipelineInfo* pipeline_info);
 	VkDescriptorSetInfo* draw_getOrCreateDescriptorSet(PipelineInfo* pipeline_info, LatteDecompilerShader* shader);
 	void draw_prepareDescriptorSets(PipelineInfo* pipeline_info, VkDescriptorSetInfo*& vertexDS, VkDescriptorSetInfo*& pixelDS, VkDescriptorSetInfo*& geometryDS);

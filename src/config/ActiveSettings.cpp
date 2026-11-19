@@ -56,7 +56,13 @@ void ActiveSettings::Init()
 
 bool ActiveSettings::LoadSharedLibrariesEnabled()
 {
+#if BOOST_PLAT_ANDROID
+	// The Android game profile screen shows this option as off when the profile does not set it (see NativeGameTitles.cpp), so the engine
+	// must not silently load the real system libraries from cafeLibs in that case: with them several games crash or ask for a system update.
+	return g_current_game_profile->ShouldLoadSharedLibraries().value_or(false);
+#else
 	return g_current_game_profile->ShouldLoadSharedLibraries().value_or(true);
+#endif
 }
 
 bool ActiveSettings::DisplayDRCEnabled()

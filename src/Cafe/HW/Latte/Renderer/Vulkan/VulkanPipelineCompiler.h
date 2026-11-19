@@ -21,7 +21,7 @@ private:
 
 	/* vertex input state */
 
-	void InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader);
+	void InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader, PipelineInfo* pipelineInfo);
 	void InitInputAssemblyState(const Latte::LATTE_VGT_PRIMITIVE_TYPE::E_PRIMITIVE_TYPE primitiveMode);
 	void InitViewportState();
 	void InitRasterizerState(const LatteContextRegister& latteRegister, VulkanRenderer* vkRenderer, bool isPrimitiveRect, bool& usesDepthBias);
@@ -31,6 +31,8 @@ private:
 	void InitDynamicState(PipelineInfo* pipelineInfo, bool usesBlendConstants, bool usesDepthBias);
 
 public:
+	void DumpShadersOfFailedPipeline();
+
 	PipelineCompiler();
 	~PipelineCompiler();
 

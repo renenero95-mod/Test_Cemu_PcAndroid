@@ -364,7 +364,7 @@ bool PipelineCompiler::InitShaderStages(VulkanRenderer* vkRenderer, RendererShad
 	return true;
 }
 
-void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader)
+void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader, PipelineInfo* pipelineInfo)
 {
 	vertexInputAttributeDescription.reserve(16);
 	vertexInputBindingDescription.reserve(fetchShader->bufferGroups.size());
@@ -428,7 +428,19 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
 		{
 			uint32 instanceDivisor = *bufferInstanceDivisor;
 			auto vkRenderer = VulkanRenderer::GetInstance();
-			if (instanceDivisor == 0 || instanceDivisor > 0xFFFF || !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
+			if (instanceDivisor > 1 && !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
+			{
+				// the driver cannot apply the divisor: read a single element per draw and let draw_submit advance it
+				static bool s_loggedEmulation = false;
+				if (!s_loggedEmulation)
+				{
+					s_loggedEmulation = true;
+					cemuLog_log(LogType::Force, "Vulkan: emulating vertex attribute divisors by splitting instanced draws (first divisor: {})", instanceDivisor);
+				}
+				vertexInputBindingDescription.back().stride = 0;
+				pipelineInfo->emulatedInstanceDivisors.push_back({bufferIndex, instanceDivisor, bufferStride});
+			}
+			else if (instanceDivisor == 0 || instanceDivisor > 0xFFFF || !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
 			{
 				cemuLog_log(LogType::Force, "Vulkan: Unsupported vertex attribute divisor {}", instanceDivisor);
 			}
@@ -874,7 +886,7 @@ bool PipelineCompiler::InitFromCurrentGPUState(PipelineInfo* pipelineInfo, const
 	// ##########################################################################################################################################
 
 	pipelineInfo->primitiveMode = primitiveMode;
-	InitVertexInputState(latteRegister, pipelineInfo->vertexShader, pipelineInfo->fetchShader);
+	InitVertexInputState(latteRegister, pipelineInfo->vertexShader, pipelineInfo->fetchShader, pipelineInfo);
 	InitInputAssemblyState(primitiveMode);
 	InitViewportState();
 	bool usesDepthBias = false;
@@ -1021,6 +1033,19 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
 		retryCount++;
 	}
 
+	if (result == VK_ERROR_UNKNOWN)
+	{
+		// some drivers (observed on Adreno) report VK_ERROR_UNKNOWN: try once more without the pipeline cache
+		VkPipeline retryPipeline = VK_NULL_HANDLE;
+		const VkResult retryResult = vkCreateGraphicsPipelines(vkRenderer->m_logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &retryPipeline);
+		if (retryResult == VK_SUCCESS)
+		{
+			cemuLog_log(LogType::Force, "Graphics pipeline created after retrying without the pipeline cache");
+			pipeline = retryPipeline;
+			result = VK_SUCCESS;
+		}
+	}
+
 	if (result == VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT)
 	{
 		return false;
@@ -1031,7 +1056,9 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
 	}
 	else
 	{
-		cemuLog_log(LogType::Force, "Failed to create graphics pipeline. Error {}", (sint32)result);
+		cemuLog_log(LogType::Force, "Failed to create graphics pipeline. Error {} (vertex shader {:016x}, pixel shader {:016x}, geometry shader {:016x})", (sint32)result,
+			m_vkVertexShader ? m_vkVertexShader->GetBaseHash() : 0, m_vkPixelShader ? m_vkPixelShader->GetBaseHash() : 0, m_vkGeometryShader ? m_vkGeometryShader->GetBaseHash() : 0);
+		DumpShadersOfFailedPipeline();
 		cemu_assert_debug(false);
 		return true; // true indicates that caller should no longer attempt to compile this pipeline again
 	}
@@ -1056,6 +1083,31 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
 		}
 	}
 	return true;
+}
+
+// saves the GLSL of the shaders of a pipeline that the driver refused to create, so the cause can be investigated
+void PipelineCompiler::DumpShadersOfFailedPipeline()
+{
+	static std::mutex s_dumpMutex;
+	static std::unordered_set<uint64> s_dumpedShaders;
+	std::lock_guard lock(s_dumpMutex);
+	const auto dumpShader = [](RendererShaderVk* shader, const char* stageName)
+	{
+		if (!shader)
+			return;
+		const uint64 baseHash = shader->GetBaseHash();
+		if (!s_dumpedShaders.insert(baseHash ^ (static_cast<uint64>(shader->GetType()) << 60)).second)
+			return;
+		std::error_code ec;
+		const fs::path directory = ActiveSettings::GetUserDataPath("shaderDump/failedPipelines");
+		fs::create_directories(directory, ec);
+		std::ofstream file(directory / fmt::format("{:016x}_{}.glsl", baseHash, stageName), std::ios::binary);
+		if (file.is_open())
+			file << shader->GetGlslCode();
+	};
+	dumpShader(m_vkVertexShader, "vertex");
+	dumpShader(m_vkPixelShader, "pixel");
+	dumpShader(m_vkGeometryShader, "geometry");
 }
 
 void PipelineCompiler::TrackAsCached(uint64 baseHash, uint64 pipelineStateHash)

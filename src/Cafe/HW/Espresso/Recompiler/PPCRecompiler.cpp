@@ -399,6 +399,8 @@ bool PPCRecompiler_makeRecompiledFunctionActive(uint32 initialEntryPoint, PPCFun
 
 	// update jump table and remember which entries we updated
 	cemu_assert_debug(ppcRecFunc->jumpTableEntries.empty());
+	// the generated code must be visible to the other cores before they can see the pointers to it (weakly ordered CPUs like ARM64)
+	std::atomic_thread_fence(std::memory_order_release);
 	for (auto& itr : entryPoints)
 	{
 		ppcRecompilerInstanceData->ppcRecompilerDirectJumpTable[itr.first / 4] = (PPCREC_JUMP_ENTRY)((uint8*)ppcRecFunc->x86Code + itr.second);
