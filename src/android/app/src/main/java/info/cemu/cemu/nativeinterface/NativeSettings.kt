@@ -62,10 +62,10 @@ object NativeSettings {
     external fun setDownscalingFilter(value: Int)
 
     @JvmStatic
-    external fun getBypassSystemUpdateCheck(): Boolean
+    external fun getExperimentalOption(id: Int): Boolean
 
     @JvmStatic
-    external fun setBypassSystemUpdateCheck(value: Boolean)
+    external fun setExperimentalOption(id: Int, value: Boolean)
 
     @JvmStatic
     external fun getAccurateBarriers(): Boolean

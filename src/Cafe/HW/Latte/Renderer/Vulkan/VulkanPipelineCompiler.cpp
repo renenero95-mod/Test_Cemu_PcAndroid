@@ -6,6 +6,7 @@
 #include "Cafe/HW/Latte/Core/LattePerformanceMonitor.h"
 #include "Cafe/OS/libs/gx2/GX2.h"
 #include "config/ActiveSettings.h"
+#include "config/CemuConfig.h"
 #include "util/helpers/helpers.h"
 #include "util/helpers/Serializer.h"
 #include "Cafe/HW/Latte/Common/RegisterSerializer.h"
@@ -428,7 +429,7 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
 		{
 			uint32 instanceDivisor = *bufferInstanceDivisor;
 			auto vkRenderer = VulkanRenderer::GetInstance();
-			if (instanceDivisor > 1 && !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
+			if (instanceDivisor > 1 && !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor && GetConfig().experimental_divisor_emulation)
 			{
 				// the driver cannot apply the divisor: read a single element per draw and let draw_submit advance it
 				static bool s_loggedEmulation = false;
@@ -1033,7 +1034,7 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
 		retryCount++;
 	}
 
-	if (result == VK_ERROR_UNKNOWN)
+	if (result == VK_ERROR_UNKNOWN && GetConfig().experimental_pipeline_retry)
 	{
 		// some drivers (observed on Adreno) report VK_ERROR_UNKNOWN: try once more without the pipeline cache
 		VkPipeline retryPipeline = VK_NULL_HANDLE;

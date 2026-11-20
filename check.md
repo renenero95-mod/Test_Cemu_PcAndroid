@@ -16,6 +16,8 @@ Aggiornato: 2026-11-18 · Fase: **v2 dopo i test su telefono: crash JIT da diagn
 
 - v2.2: emulazione del divisore degli attributi (Vulkan), diagnostica e retry delle pipeline fallite (-13), "Load shared libraries" spento di default su Android (prima la schermata diceva spento ma il motore lo accendeva), barriera memoria JIT, menu "Refresh game list", log dei file non trovati col bypass. Dettagli in `FIX_SPIEGAZIONE.md` §8.
 
+- v2.3: tolto il bypass; sezione Generale → Sperimentale (divisore, retry pipeline, Map null page, log dettagliato); piano da 200 idee in `docs/PIANO_200_IDEE.md`.
+
 ## Fatto (v1)
 1. **Scoperta:** lo zip era la PR con solo parte di upstream. Nel bundle `audit_evidence` ho trovato gli alberi completi di upstream/main e PR → **merge a tre vie** (base = PR − patch): **295 file aggiornati, 4 conflitti** (swkbd, CMake×2, README) risolti. Dettagli: `FIX_SPIEGAZIONE.md` §1-2.
 2. **Fix applicati:** F2 `@Keep` NativeException · F3 meta.json corrotto/`libraryName` fuori cartella · F4 zip-slip + zip senza cartelle · F6 init Vulkan non ripetuta · F7 copia driver fallita · F8 `message!!` · F9 graphic pack · **F12-F13 touch/overlay bloccati dopo `ACTION_CANCEL`** · F14 `attempt()` e cancellazione coroutine · F15 backup installazione titolo.

@@ -199,8 +199,7 @@ namespace coreinit
 
 		systemVersion->n0 = 0x5;
 		systemVersion->n1 = 0x5;
-		// 5.5.5 by default; the "Bypass system update check" setting reports 5.5.6, the last official firmware
-		systemVersion->n2 = GetConfig().bypass_system_update_check ? 0x6 : 0x5;
+		systemVersion->n2 = 0x5;
 		// todo: Load this from \sys\title\00050010\10041200\content\version.bin
 
 		osLib_returnFromFunction(hCPU, 0);

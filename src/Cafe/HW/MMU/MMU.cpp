@@ -1,4 +1,5 @@
 #include "Cafe/HW/MMU/MMU.h"
+#include "config/CemuConfig.h"
 #include "Cafe/GraphicPack/GraphicPack2.h"
 #include "Cemu/Logging/CemuLogging.h"
 #include "WindowSystem.h"
@@ -145,6 +146,9 @@ void memory_init()
 	}
 }
 
+static constexpr size_t NULL_PAGE_SIZE = 0x10000;
+static bool s_nullPageMapped = false;
+
 void memory_mapForCurrentTitle()
 {
 	for (auto& itr : g_mmuRanges)
@@ -196,10 +200,19 @@ void memory_mapForCurrentTitle()
 		if (!itr->isOptional() && !itr->isMappedEarly())
 			itr->mapMem();
 	}
+
+	// experimental: a game that reads through a null pointer gets zeros instead of a fault that closes the app
+	if (GetConfig().experimental_map_null_page)
+		s_nullPageMapped = MemMapper::AllocateMemory(memory_base, NULL_PAGE_SIZE, MemMapper::PAGE_PERMISSION::P_RW, true) != nullptr;
 }
 
 void memory_unmapForCurrentTitle()
 {
+	if (s_nullPageMapped)
+	{
+		MemMapper::FreeMemory(memory_base, NULL_PAGE_SIZE, true);
+		s_nullPageMapped = false;
+	}
     for (auto& itr : g_mmuRanges)
     {
         if (itr->isMapped() && !itr->isMappedEarly())

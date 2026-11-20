@@ -412,7 +412,11 @@ struct CemuConfig
 	void SetMLCPath(fs::path path, bool save = true);
 
 	ConfigValue<uint64> log_flag{ 0 };
-	ConfigValue<bool> bypass_system_update_check{ false }; // Android: compatibility switch for games that refuse to start asking for a system update/DLC (experimental)
+	// Android "Experimental" settings: switches that make it possible to test several hypotheses with the same build
+	ConfigValue<bool> experimental_divisor_emulation{ true }; // emulate vertex attribute divisors when the driver does not support them
+	ConfigValue<bool> experimental_pipeline_retry{ true };    // retry a failed graphics pipeline without the pipeline cache
+	ConfigValue<bool> verbose_hle_log{ true };                // log unsupported API calls and files that games look for and do not find
+	ConfigValue<bool> experimental_map_null_page{ false };    // map guest addresses 0x0-0xFFFF as readable zeros instead of closing the game on a null pointer access
 	ConfigValue<bool> advanced_ppc_logging{ false };
 
 	ConfigValue<bool> permanent_storage{ true };

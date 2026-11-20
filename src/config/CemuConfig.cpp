@@ -19,8 +19,11 @@ XMLConfigParser CemuConfig::Load(XMLConfigParser& parser)
 
 	// general settings
 	log_flag = parser.get("logflag", log_flag.GetInitValue());
-	bypass_system_update_check = parser.get("bypass_system_update_check", bypass_system_update_check.GetInitValue());
-	cemuLog_setActiveLoggingFlags(GetConfig().log_flag.GetValue() | (bypass_system_update_check ? cemuLog_getFlag(LogType::UnsupportedAPI) : 0));
+	experimental_divisor_emulation = parser.get("experimental_divisor_emulation", experimental_divisor_emulation.GetInitValue());
+	experimental_pipeline_retry = parser.get("experimental_pipeline_retry", experimental_pipeline_retry.GetInitValue());
+	verbose_hle_log = parser.get("verbose_hle_log", verbose_hle_log.GetInitValue());
+	experimental_map_null_page = parser.get("experimental_map_null_page", experimental_map_null_page.GetInitValue());
+	cemuLog_setActiveLoggingFlags(GetConfig().log_flag.GetValue() | (verbose_hle_log ? cemuLog_getFlag(LogType::UnsupportedAPI) : 0));
 	advanced_ppc_logging = parser.get("advanced_ppc_logging", advanced_ppc_logging.GetInitValue());
 
 	const char* mlc = parser.get("mlc_path", "");
@@ -304,7 +307,10 @@ XMLConfigParser CemuConfig::Save(XMLConfigParser& parser)
 	auto config = parser.set("content");
 	// general settings
 	config.set("logflag", log_flag.GetValue());
-	config.set("bypass_system_update_check", bypass_system_update_check.GetValue());
+	config.set("experimental_divisor_emulation", experimental_divisor_emulation.GetValue());
+	config.set("experimental_pipeline_retry", experimental_pipeline_retry.GetValue());
+	config.set("verbose_hle_log", verbose_hle_log.GetValue());
+	config.set("experimental_map_null_page", experimental_map_null_page.GetValue());
 	config.set("advanced_ppc_logging", advanced_ppc_logging.GetValue());
 	config.set("mlc_path", mlc_path.GetValue().c_str());
 	config.set<bool>("permanent_storage", permanent_storage);

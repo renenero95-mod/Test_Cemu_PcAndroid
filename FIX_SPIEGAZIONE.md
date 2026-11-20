@@ -110,3 +110,15 @@ Non fatti (decisione): F5 (`ANativeWindow_acquire` extra in `NativeEmulation.cpp
 | Z3 | `Cafe/Filesystem/fsc.cpp` | Con *Bypass system update check* attivo il log riporta ogni file/cartella che il gioco cerca e non trova (`FS: not found: ...`) |
 
 **Cosa mandare dopo la prossima build:** log di Mario Kart con un paracadute in gioco (cerca "emulating vertex attribute divisors" e "Failed to create graphics pipeline" con gli hash; la cartella `shaderDump/failedPipelines` se creata); log di Watch Dogs/NSLU con *Load shared libraries* spento (ora è il default).
+
+
+## 9. Versione v2.3: sezione «Sperimentale», piano da 200 idee
+- **Bypass «system update» rimosso** (non serve: con l'update estratto nella cartella dei giochi Zelda parte). Al suo posto, in **Impostazioni → Generale → Sperimentale**, quattro interruttori per provare più ipotesi con la stessa build (salvati in `settings.xml` come `experimental_*` e `verbose_hle_log`):
+  | Interruttore | Predefinito | Effetto |
+  |---|---|---|
+  | Emulate vertex attribute divisors | ON | emulazione del divisore (V1); spegnerlo = comportamento precedente |
+  | Retry failed pipelines | ON | secondo tentativo senza pipeline cache su `VK_ERROR_UNKNOWN` (V2) |
+  | Map null page | OFF | mappa gli indirizzi guest 0x0–0xFFFF come zeri leggibili (`MMU.cpp`, `memory_mapForCurrentTitle`): un puntatore nullo non chiude più il gioco. **Esperimento** per Watch Dogs/NSLU (guasti a `0x494`/`0x18`); vale dal prossimo avvio del gioco |
+  | Detailed log | ON | log delle API non supportate e dei file che il gioco cerca e non trova (`FS: not found`) |
+- `docs/PIANO_200_IDEE.md`: 200 voci in 10 categorie con rischio e stato (FATTO / EVIDENZA / IPOTESI / IDEA) e le prime 12 priorità.
+- Come usarla: dopo la build, per ogni gioco problematico provare **Map null page** (NSLU, Watch Dogs) e, per Mario Kart, accendere/spegnere **Emulate vertex attribute divisors** e mandare il log (cerca `emulating vertex attribute divisors`, `Failed to create graphics pipeline` e la cartella `shaderDump/failedPipelines`).
