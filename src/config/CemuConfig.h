@@ -70,16 +70,7 @@ enum GraphicAPI
 	kOpenGL = 0,
 	kVulkan,
 	kMetal,
-	COUNT
 };
-
-#if defined(ENABLE_VULKAN)
-constexpr GraphicAPI kDefaultGraphicsAPI = kVulkan;
-#elif defined(ENABLE_METAL)
-constexpr GraphicAPI kDefaultGraphicsAPI = kMetal;
-#elif defined(ENABLE_OPENGL)
-constexpr GraphicAPI kDefaultGraphicsAPI = kOpenGL;
-#endif
 
 enum AudioChannels
 {
@@ -412,11 +403,6 @@ struct CemuConfig
 	void SetMLCPath(fs::path path, bool save = true);
 
 	ConfigValue<uint64> log_flag{ 0 };
-	// Android "Experimental" settings: switches that make it possible to test several hypotheses with the same build
-	ConfigValue<bool> experimental_divisor_emulation{ true }; // emulate vertex attribute divisors when the driver does not support them
-	ConfigValue<bool> experimental_pipeline_retry{ true };    // retry a failed graphics pipeline without the pipeline cache
-	ConfigValue<bool> verbose_hle_log{ true };                // log unsupported API calls and files that games look for and do not find
-	ConfigValue<bool> experimental_map_null_page{ false };    // map guest addresses 0x0-0xFFFF as readable zeros instead of closing the game on a null pointer access
 	ConfigValue<bool> advanced_ppc_logging{ false };
 
 	ConfigValue<bool> permanent_storage{ true };
@@ -457,15 +443,15 @@ struct CemuConfig
 	ConfigValueBounds<CafeConsoleLanguage> console_language{ CafeConsoleLanguage::EN };
 
 	// graphics
-	ConfigValue<GraphicAPI> graphic_api{ kDefaultGraphicsAPI };
+	ConfigValue<GraphicAPI> graphic_api{ kVulkan };
 	std::array<uint8, 16> legacy_graphic_device_uuid{}; // placeholder option for backwards compatibility with settings from 2.6 and before (renamed to "vkDevice")
 	std::array<uint8, 16> vk_graphic_device_uuid;
 	uint64 mtl_graphic_device_uuid{ 0 };
 	ConfigValue<int> vsync{ 0 }; // 0 = off, 1+ = depending on render backend
-	ConfigValue<bool> gx2drawdone_sync { true };
+	ConfigValue<bool> gx2drawdone_sync { false };
 	ConfigValue<bool> render_upside_down{ false };
 	ConfigValue<bool> async_compile{ true };
-#ifdef ENABLE_METAL
+#if ENABLE_METAL
 	ConfigValue<bool> force_mesh_shaders{ false };
 #endif
 
@@ -531,7 +517,7 @@ struct CemuConfig
 	// debug
 	ConfigValueBounds<CrashDump> crash_dump{ CrashDump::Disabled };
 	ConfigValue<uint16> gdb_port{ 1337 };
-#ifdef ENABLE_METAL
+#if ENABLE_METAL
 	ConfigValue<std::string> gpu_capture_dir{ "" };
 	ConfigValue<bool> framebuffer_fetch{ true };
 #endif

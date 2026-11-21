@@ -1,0 +1,88 @@
+[
+  {
+    "name": "imgui",
+    "path": "dependencies/imgui",
+    "zip": "https://github.com/ocornut/imgui/archive/refs/tags/v1.89.9.zip",
+    "markers": [
+      "imgui.h",
+      "imgui_internal.h",
+      "imgui.cpp",
+      "imgui_draw.cpp",
+      "imgui_tables.cpp",
+      "imgui_widgets.cpp"
+    ],
+    "note": "Serve imgui 1.87-1.90 (Cemu usa io.NavInputs, io.ImeWindowHandle, ImFont::FallbackAdvanceX e ImTextureID = void*, tutti spariti/cambiati nella 1.92). Consigliata v1.89.9."
+  },
+  {
+    "name": "cubeb",
+    "path": "dependencies/cubeb",
+    "zip": "https://github.com/mozilla/cubeb/archive/HEAD.zip",
+    "markers": [
+      "CMakeLists.txt",
+      "include/cubeb/cubeb.h"
+    ],
+    "note": "Audio. Richiede il sottomodulo sanitizers-cmake (vedi sotto)."
+  },
+  {
+    "name": "sanitizers-cmake",
+    "path": "dependencies/cubeb/cmake/sanitizers-cmake",
+    "zip": "https://github.com/arsenm/sanitizers-cmake/archive/HEAD.zip",
+    "markers": [
+      "cmake/FindSanitizers.cmake"
+    ],
+    "note": "Sottomodulo di cubeb: GitHub 'Download ZIP' NON lo include, per questo la build falliva con 'Could not find sanitizers-cmake'."
+  },
+  {
+    "name": "ZArchive",
+    "path": "dependencies/ZArchive",
+    "zip": "https://github.com/Exzap/ZArchive/archive/HEAD.zip",
+    "markers": [
+      "CMakeLists.txt",
+      "include/zarchive/zarchivereader.h"
+    ],
+    "note": "Lettura archivi .wua."
+  },
+  {
+    "name": "Vulkan-Headers",
+    "path": "dependencies/Vulkan-Headers",
+    "zip": "https://github.com/KhronosGroup/Vulkan-Headers/archive/HEAD.zip",
+    "markers": [
+      "include/vulkan/vulkan.h",
+      "include/vulkan/vulkan_core.h"
+    ],
+    "note": "Header Vulkan (retrocompatibili: va bene l'ultima versione)."
+  },
+  {
+    "name": "libadrenotools",
+    "path": "dependencies/libadrenotools",
+    "zip": "https://github.com/bylaws/libadrenotools/archive/HEAD.zip",
+    "markers": [
+      "CMakeLists.txt",
+      "include/adrenotools/driver.h"
+    ],
+    "note": "Driver GPU personalizzati (Adreno). Richiede il sottomodulo linkernsbypass (vedi sotto)."
+  },
+  {
+    "name": "liblinkernsbypass",
+    "path": "dependencies/libadrenotools/lib/linkernsbypass",
+    "zip": "https://github.com/bylaws/liblinkernsbypass/archive/HEAD.zip",
+    "markers": [
+      "CMakeLists.txt"
+    ],
+    "note": "Sottomodulo di libadrenotools (il repository si chiama liblinkernsbypass). Se manca, la CI lo clona da sola (piccolo e stabile).",
+    "content": {
+      "CMakeLists.txt": "linkernsbypass"
+    },
+    "ci_clone": "https://github.com/bylaws/liblinkernsbypass"
+  },
+  {
+    "name": "xbyak_aarch64",
+    "path": "dependencies/xbyak_aarch64",
+    "zip": "https://github.com/fujitsu/xbyak_aarch64/archive/HEAD.zip",
+    "markers": [
+      "CMakeLists.txt",
+      "xbyak_aarch64/xbyak_aarch64.h"
+    ],
+    "note": "Generatore di codice ARM64 del JIT."
+  }
+]

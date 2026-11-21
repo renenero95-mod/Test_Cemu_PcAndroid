@@ -6,33 +6,89 @@
 #include "Cafe/OS/RPL/rpl.h"
 #include "Cafe/OS/libs/coreinit/coreinit_MEM_FrmHeap.h"
 #include "coreinit_DynLoad.h"
-#include "util/ChunkedHeap/ChunkedHeap.h"
 
 // the system area is a block of memory that exists only in the emulator. It is used to simplify dynamic memory allocation for system data
-// it's deprecated -> Use SysHeap/CafeStaticVar for everything
+// this partially overlaps with the system heap from coreinit_SysHeap.cpp -> Use SysHeap for everything
+// ---------------------------------------------------------------------------
+// CemuFixer: low guest memory (0x00000000 - 0x0000FFFF) guard
+// On a real Wii U (and on desktop Cemu, where this range is mapped as "MEM0")
+// a read through a NULL object pointer such as lwz r12,0x494(r3) with r3=0 does
+// not fault. The guest address space is reserved PROT_NONE on Linux/Android and
+// no MMURange covers guest 0x0-0xFFFF (CODE_LOW0 starts at 0x10000), so the same
+// game code raises SIGSEGV. Map only the pages that are really unreadable
+// (zeroed RW), one by one, so anything already mapped there is never wiped.
+// ---------------------------------------------------------------------------
+#if defined(__linux__) || defined(__ANDROID__)
+#include <sys/mman.h>
+#include <unistd.h>
+#include <cerrno>
+#include <mutex>
 
-static std::unique_ptr<VHeap> s_cosSysHeap;
-static std::mutex s_allocatorMtx;
+static bool CemuFixer_IsHostByteReadable(const void* p)
+{
+    int fds[2];
+    if (pipe(fds) != 0)
+        return true; // cannot probe -> do not touch anything
+    const ssize_t r = write(fds[1], p, 1);
+    const bool readable = !(r < 0 && errno == EFAULT);
+    close(fds[0]);
+    close(fds[1]);
+    return readable;
+}
 
-// deprecated
+static void CemuFixer_EnsureLowGuestMemory()
+{
+    // normally called once per title launch; the lock makes concurrent calls safe as well
+    static std::mutex s_lowMemMutex;
+    std::lock_guard<std::mutex> lowMemLock(s_lowMemMutex);
+    if (!memory_base)
+        return;
+    const size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+    const size_t lowSize = (0x10000 + pageSize - 1) & ~(pageSize - 1);
+    size_t mappedPages = 0, failedPages = 0;
+    for (size_t off = 0; off < lowSize; off += pageSize)
+    {
+        if (CemuFixer_IsHostByteReadable(memory_base + off))
+            continue;
+        void* res = mmap(memory_base + off, pageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+        if (res == MAP_FAILED)
+            failedPages++;
+        else
+            mappedPages++;
+    }
+    if (mappedPages == 0 && failedPages == 0)
+        cemuLog_log(LogType::Force, "[LOWMEM] guest 0x0-0x{:x} already readable, nothing to do", lowSize);
+    else
+        cemuLog_log(LogType::Force, "[LOWMEM] guest 0x0-0x{:x}: mapped {} zeroed RW page(s), {} failed (errno={})", lowSize, mappedPages, failedPages, errno);
+}
+#else
+static void CemuFixer_EnsureLowGuestMemory() {}
+#endif
+
+MPTR sysAreaAllocatorOffset = 0;
+
 MPTR coreinit_allocFromSysArea(uint32 size, uint32 alignment)
 {
-	std::unique_lock _(s_allocatorMtx);
 	cemu_assert_debug(mmuRange_CEMU_AREA.isMapped());
-	if (!s_cosSysHeap)
-		s_cosSysHeap = std::make_unique<VHeap>(mmuRange_CEMU_AREA.getPtr(), mmuRange_CEMU_AREA.getSize());
-	MEMPTR<void> r = s_cosSysHeap->alloc(size, alignment);
-	if (!r)
+	// deprecated, use OSAllocFromSystem instead (for everything but SysAllocator which probably should use its own allocator?)
+	static std::mutex s_allocator_mutex;
+	s_allocator_mutex.lock();
+	sysAreaAllocatorOffset = (sysAreaAllocatorOffset+alignment-1);
+	sysAreaAllocatorOffset -= (sysAreaAllocatorOffset%alignment);
+	uint32 newMemOffset =  mmuRange_CEMU_AREA.getBase() + sysAreaAllocatorOffset;
+	sysAreaAllocatorOffset += (size+3)&~3;
+	if( sysAreaAllocatorOffset >= mmuRange_CEMU_AREA.getSize() )
+	{
 		cemuLog_log(LogType::Force, "Ran out of system memory");
-	cemu_assert(r);
-	return r.GetMPTR();
+		cemu_assert(false); // out of bounds
+	}
+	s_allocator_mutex.unlock();
+	return newMemOffset;
 }
 
 void coreinit_freeToSysArea(MPTR mem)
 {
-	cemu_assert(mem != MPTR_NULL);
-	std::unique_lock _(s_allocatorMtx);
-	s_cosSysHeap->free(MEMPTR<void>(mem).GetPtr());
+	// todo
 }
 
 namespace coreinit
@@ -50,7 +106,7 @@ namespace coreinit
 	MEMList g_list3;
 
 	std::array<uint32, 3> gHeapFillValues{ 0xC3C3C3C3, 0xF3F3F3F3, 0xD3D3D3D3 };
-	CafeStaticVar<OSSpinLock> gHeapGlobalLock{coreinit::g_coreinitStaticData};
+	SysAllocator<OSSpinLock> gHeapGlobalLock;
 	MEMHeapBase* gDefaultHeap;
 
 	bool MEMHeapTable_Add(MEMHeapBase* heap)
@@ -562,7 +618,7 @@ namespace coreinit
 		hCPU->instructionPointer = gCoreinitData->MEMFreeToDefaultHeap.GetMPTR();
 	}
 
-	CafeStaticVar<MEMAllocatorFunc> gDefaultHeapAllocator{coreinit::g_coreinitStaticData};
+	SysAllocator<MEMAllocatorFunc> gDefaultHeapAllocator;
 
 	void coreinitExport_MEMInitAllocatorForDefaultHeap(PPCInterpreter_t* hCPU)
 	{
@@ -621,7 +677,6 @@ namespace coreinit
             it = nullptr;
 
         g_heapTableCount = 0;
-        gHeapFillValues = { 0xC3C3C3C3, 0xF3F3F3F3, 0xD3D3D3D3 };
         g_slockInitialized = false;
         g_listsInitialized = false;
         gDefaultHeap = nullptr;
@@ -634,6 +689,8 @@ namespace coreinit
 	void InitializeMEM()
 	{
         MEMResetToDefaultState();
+		CemuFixer_EnsureLowGuestMemory();
+
 
 		cafeExportRegister("coreinit", CoreInitDefaultHeap, LogType::CoreinitMem);
 

@@ -68,7 +68,6 @@ import info.cemu.cemu.titlemanager.usecases.CompressResult
 import info.cemu.cemu.titlemanager.usecases.CompressionProgress
 import info.cemu.cemu.titlemanager.usecases.CompressionStage
 import info.cemu.cemu.titlemanager.usecases.DeleteResult
-import info.cemu.cemu.titlemanager.usecases.ImportResult
 import info.cemu.cemu.titlemanager.usecases.InstallResult
 import kotlinx.coroutines.launch
 import java.text.MessageFormat
@@ -86,8 +85,6 @@ fun TitleManagerScreen(
     val queuedTitleToInstallError by titleListViewModel.queuedTitleToInstallError.collectAsState()
     val queuedTitleToCompress by titleListViewModel.queuedTitleToCompress.collectAsState()
     val showTitleInstallProgress by titleListViewModel.titleInstallInProgress.collectAsState()
-    val showTitleImportProgress by titleListViewModel.titleImportInProgress.collectAsState()
-    var showInstallMenu by remember { mutableStateOf(false) }
     val titleInstallProgress by titleListViewModel.titleInstallProgress.collectAsState()
     val compressStage by titleListViewModel.compressStage.collectAsState()
     val compressProgress by titleListViewModel.compressProgress.collectAsState()
@@ -100,13 +97,6 @@ fun TitleManagerScreen(
             snackbarHostState.currentSnackbarData?.dismiss()
             snackbarHostState.showSnackbar(text)
         }
-    }
-
-    fun importResultMessage(result: ImportResult): String = when {
-        result.notEnoughSpace -> tr("Not enough space")
-        result.installed > 0 || result.skipped > 0 ->
-            "${tr("Installed")}: ${result.installed}, ${tr("Already installed")}: ${result.skipped}, ${tr("Failed")}: ${result.failed}"
-        else -> tr("No update or DLC found in the selected location")
     }
 
     fun installQueuedTitle() {
@@ -134,19 +124,8 @@ fun TitleManagerScreen(
             titleListViewModel.queueTitleToInstall(
                 titlePath = documentFile.uri,
                 onInvalidTitle = {
-                    // not a title folder: look for updates, DLC and games inside it
-                    titleListViewModel.importTitlesFromFolder(context, documentFile.uri) { result ->
-                        showNotificationMessage(importResultMessage(result))
-                    }
+                    showNotificationMessage(tr("Invalid title"))
                 })
-        }
-
-    val importZipLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri == null) return@rememberLauncherForActivityResult
-            titleListViewModel.importTitlesFromZip(context, uri) { result ->
-                showNotificationMessage(importResultMessage(result))
-            }
         }
 
     val compressFileLauncher =
@@ -187,34 +166,11 @@ fun TitleManagerScreen(
                     contentDescription = null
                 )
             }
-            Box {
-                IconButton(onClick = { showInstallMenu = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_add),
-                        contentDescription = null
-                    )
-                }
-                DropdownMenu(
-                    expanded = showInstallMenu,
-                    onDismissRequest = { showInstallMenu = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(tr("Install from folder (also finds updates and DLC inside)")) },
-                        onClick = {
-                            showInstallMenu = false
-                            installTitleLauncher.launch(null)
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(tr("Import update or DLC from ZIP")) },
-                        onClick = {
-                            showInstallMenu = false
-                            importZipLauncher.launch(
-                                arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
-                            )
-                        },
-                    )
-                }
+            IconButton(onClick = { installTitleLauncher.launch(null) }) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_add),
+                    contentDescription = null
+                )
             }
         }
     ) {
@@ -256,14 +212,6 @@ fun TitleManagerScreen(
             onConfirm = { installQueuedTitle() }
         )
     }
-
-    if (showTitleImportProgress)
-        AlertDialog(
-            onDismissRequest = {},
-            title = { Text(tr("Importing")) },
-            text = { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) },
-            confirmButton = {},
-        )
 
     if (showTitleInstallProgress)
         TitleInstallProgressDialog(

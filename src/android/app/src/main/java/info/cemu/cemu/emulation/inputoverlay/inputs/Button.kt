@@ -30,15 +30,6 @@ abstract class Button(
                     return true
                 }
             }
-
-            MotionEvent.ACTION_CANCEL -> {
-                // the system took over the gesture (notification shade, system gestures...): release the button
-                if (currentPointerId != -1) {
-                    currentPointerId = -1
-                    updateState(false)
-                    return true
-                }
-            }
         }
         return false
     }

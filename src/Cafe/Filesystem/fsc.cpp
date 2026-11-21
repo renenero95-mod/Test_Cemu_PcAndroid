@@ -1,6 +1,5 @@
 #include "Cafe/Filesystem/fsc.h"
 #include "Cafe/Filesystem/FST/fstUtil.h"
-#include "config/CemuConfig.h"
 
 struct FSCMountPathNode
 {
@@ -436,9 +435,6 @@ FSCVirtualFile* fsc_open(const char* path, FSC_ACCESS_FLAG accessFlags, sint32* 
 	}
 	fscLeave();
 	*fscStatus = FSC_STATUS_FILE_NOT_FOUND;
-	// diagnostic aid ("Detailed log" setting): shows which file or folder a game looked for and did not find
-	if (GetConfig().verbose_hle_log)
-		cemuLog_log(LogType::Force, "FS: not found: {}", path);
 	return nullptr;
 }
 

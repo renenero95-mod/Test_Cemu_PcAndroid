@@ -17,7 +17,6 @@
  *****************************************************************************
  * Originally developed and contributed by Ittiam Systems Pvt. Ltd, Bangalore
 */
-
 #include "ih264_typedefs.h"
 #include "ih264_macros.h"
 #include "ih264_platform_macros.h"

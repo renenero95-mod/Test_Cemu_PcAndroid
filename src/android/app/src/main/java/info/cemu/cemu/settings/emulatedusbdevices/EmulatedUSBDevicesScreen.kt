@@ -9,7 +9,7 @@ import info.cemu.cemu.nativeinterface.NativeSettings
 @Composable
 fun EmulatedUSBDevicesSettingsScreen(navigateBack: () -> Unit) {
     ScreenContent(
-        appBarText = tr("Emulated USB Devices"),
+        appBarText = tr("Emulated USB Devices settings"),
         navigateBack = navigateBack,
     ) {
         Toggle(

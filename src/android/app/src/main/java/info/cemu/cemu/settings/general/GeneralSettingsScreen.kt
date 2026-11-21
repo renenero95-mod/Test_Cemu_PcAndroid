@@ -8,10 +8,8 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import info.cemu.cemu.common.settings.GamePadPosition
 import info.cemu.cemu.common.ui.components.Button
-import info.cemu.cemu.common.ui.components.Header
 import info.cemu.cemu.common.ui.components.ScreenContent
 import info.cemu.cemu.common.ui.components.SingleSelection
-import info.cemu.cemu.common.ui.components.Toggle
 import info.cemu.cemu.common.ui.localization.tr
 import info.cemu.cemu.nativeinterface.NativeSettings
 
@@ -69,31 +67,6 @@ fun GeneralSettingsScreen(
             onChoiceChanged = { viewModel.setGamePadPosition(it) },
             choiceToString = { gamePadPositionToString(it) },
             choices = GamePadPosition.entries,
-        )
-        Header(tr("Experimental"))
-        Toggle(
-            label = tr("Emulate vertex attribute divisors"),
-            description = tr("For GPUs/drivers without this feature (most Adreno drivers). Can fix objects that are missing or without colors, for example the glider in Mario Kart 8"),
-            initialCheckedState = { NativeSettings.getExperimentalOption(0) },
-            onCheckedChanged = { NativeSettings.setExperimentalOption(0, it) },
-        )
-        Toggle(
-            label = tr("Retry failed pipelines"),
-            description = tr("When the driver refuses to create a graphics pipeline, try again without the pipeline cache"),
-            initialCheckedState = { NativeSettings.getExperimentalOption(1) },
-            onCheckedChanged = { NativeSettings.setExperimentalOption(1, it) },
-        )
-        Toggle(
-            label = tr("Map null page"),
-            description = tr("Reads through a null pointer return zeros instead of closing the game. May let games that crash at a button press or a loading screen go on. Takes effect the next time a game starts"),
-            initialCheckedState = { NativeSettings.getExperimentalOption(3) },
-            onCheckedChanged = { NativeSettings.setExperimentalOption(3, it) },
-        )
-        Toggle(
-            label = tr("Detailed log"),
-            description = tr("Log unsupported API calls and files that games look for and do not find. Useful when reporting problems"),
-            initialCheckedState = { NativeSettings.getExperimentalOption(2) },
-            onCheckedChanged = { NativeSettings.setExperimentalOption(2, it) },
         )
     }
 }

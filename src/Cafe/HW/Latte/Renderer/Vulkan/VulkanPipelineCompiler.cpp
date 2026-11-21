@@ -6,11 +6,61 @@
 #include "Cafe/HW/Latte/Core/LattePerformanceMonitor.h"
 #include "Cafe/OS/libs/gx2/GX2.h"
 #include "config/ActiveSettings.h"
-#include "config/CemuConfig.h"
 #include "util/helpers/helpers.h"
 #include "util/helpers/Serializer.h"
 #include "Cafe/HW/Latte/Common/RegisterSerializer.h"
-#include "HW/Latte/Renderer/RendererCore.h"
+
+/* rects emulation */
+
+void rectsEmulationGS_outputSingleVertex(std::string& gsSrc, LatteDecompilerShader* vertexShader, LatteShaderPSInputTable* psInputTable, sint32 vIdx, const LatteContextRegister& latteRegister)
+{
+	auto parameterMask = vertexShader->outputParameterMask;
+	for (uint32 i = 0; i < 32; i++)
+	{
+		if ((parameterMask & (1 << i)) == 0)
+			continue;
+		sint32 vsSemanticId = psInputTable->getVertexShaderOutParamSemanticId(latteRegister.GetRawView(), i);
+		if (vsSemanticId < 0)
+			continue;
+		// make sure PS has matching input
+		if (!psInputTable->hasPSImportForSemanticId(vsSemanticId))
+			continue;
+		gsSrc.append(fmt::format("passParameterSem{}Out = passParameterSem{}In[{}];\r\n", vsSemanticId, vsSemanticId, vIdx));
+	}
+	gsSrc.append(fmt::format("gl_Position = gl_in[{}].gl_Position;\r\n", vIdx));
+	gsSrc.append("EmitVertex();\r\n");
+}
+
+void rectsEmulationGS_outputGeneratedVertex(std::string& gsSrc, LatteDecompilerShader* vertexShader, LatteShaderPSInputTable* psInputTable, const char* variant, const LatteContextRegister& latteRegister)
+{
+	auto parameterMask = vertexShader->outputParameterMask;
+	for (uint32 i = 0; i < 32; i++)
+	{
+		if ((parameterMask & (1 << i)) == 0)
+			continue;
+		sint32 vsSemanticId = psInputTable->getVertexShaderOutParamSemanticId(latteRegister.GetRawView(), i);
+		if (vsSemanticId < 0)
+			continue;
+		// make sure PS has matching input
+		if (!psInputTable->hasPSImportForSemanticId(vsSemanticId))
+			continue;
+		gsSrc.append(fmt::format("passParameterSem{}Out = gen4thVertex{}(passParameterSem{}In[0], passParameterSem{}In[1], passParameterSem{}In[2]);\r\n", vsSemanticId, variant, vsSemanticId, vsSemanticId, vsSemanticId));
+	}
+	gsSrc.append(fmt::format("gl_Position = gen4thVertex{}(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_in[2].gl_Position);\r\n", variant));
+	gsSrc.append("EmitVertex();\r\n");
+}
+
+void rectsEmulationGS_outputVerticesCode(std::string& gsSrc, LatteDecompilerShader* vertexShader, LatteShaderPSInputTable* psInputTable, sint32 p0, sint32 p1, sint32 p2, sint32 p3, const char* variant, const LatteContextRegister& latteRegister)
+{
+	sint32 pList[4] = { p0, p1, p2, p3 };
+	for (sint32 i = 0; i < 4; i++)
+	{
+		if (pList[i] == 3)
+			rectsEmulationGS_outputGeneratedVertex(gsSrc, vertexShader, psInputTable, variant, latteRegister);
+		else
+			rectsEmulationGS_outputSingleVertex(gsSrc, vertexShader, psInputTable, pList[i], latteRegister);
+	}
+}
 
 RendererShaderVk* rectsEmulationGS_generate(LatteDecompilerShader* vertexShader, const LatteContextRegister& latteRegister)
 {
@@ -127,54 +177,54 @@ PipelineCompiler::~PipelineCompiler()
 		m_renderPassObj->decRef();
 };
 
-VkFormat PipelineCompiler::GetVertexFormat(Latte::E_HWFMT format)
+VkFormat PipelineCompiler::GetVertexFormat(uint8 format)
 {
 	switch (format)
 	{
-	case Latte::E_HWFMT::HWFMT_32_32_32_32_FLOAT:
+	case FMT_32_32_32_32_FLOAT:
 		return VK_FORMAT_R32G32B32A32_UINT;
-	case Latte::E_HWFMT::HWFMT_32_32_32_FLOAT:
+	case FMT_32_32_32_FLOAT:
 		return VK_FORMAT_R32G32B32_UINT;
-	case Latte::E_HWFMT::HWFMT_32_32_FLOAT:
+	case FMT_32_32_FLOAT:
 		return VK_FORMAT_R32G32_UINT;
-	case Latte::E_HWFMT::HWFMT_32_FLOAT:
+	case FMT_32_FLOAT:
 		return VK_FORMAT_R32_UINT;
-	case Latte::E_HWFMT::HWFMT_8_8_8_8:
+	case FMT_8_8_8_8:
 		return VK_FORMAT_R8G8B8A8_UINT;
-	case Latte::E_HWFMT::HWFMT_8_8_8:
+	case FMT_8_8_8:
 		return VK_FORMAT_R8G8B8_UINT;
-	case Latte::E_HWFMT::HWFMT_8_8:
+	case FMT_8_8:
 		return VK_FORMAT_R8G8_UINT;
-	case Latte::E_HWFMT::HWFMT_8:
+	case FMT_8:
 		return VK_FORMAT_R8_UINT;
-	case Latte::E_HWFMT::HWFMT_32_32_32_32:
+	case FMT_32_32_32_32:
 		return VK_FORMAT_R32G32B32A32_UINT;
-	case Latte::E_HWFMT::HWFMT_32_32_32:
+	case FMT_32_32_32:
 		return VK_FORMAT_R32G32B32_UINT;
-	case Latte::E_HWFMT::HWFMT_32_32:
+	case FMT_32_32:
 		return VK_FORMAT_R32G32_UINT;
-	case Latte::E_HWFMT::HWFMT_32:
+	case FMT_32:
 		return VK_FORMAT_R32_UINT;
-	case Latte::E_HWFMT::HWFMT_16_16_16_16:
+	case FMT_16_16_16_16:
 		return VK_FORMAT_R16G16B16A16_UINT; // verified to match OpenGL
-	case Latte::E_HWFMT::HWFMT_16_16_16:
+	case FMT_16_16_16:
 		return VK_FORMAT_R16G16B16_UINT;
-	case Latte::E_HWFMT::HWFMT_16_16:
+	case FMT_16_16:
 		return VK_FORMAT_R16G16_UINT;
-	case Latte::E_HWFMT::HWFMT_16:
+	case FMT_16:
 		return VK_FORMAT_R16_UINT;
-	case Latte::E_HWFMT::HWFMT_16_16_16_16_FLOAT:
+	case FMT_16_16_16_16_FLOAT:
 		return VK_FORMAT_R16G16B16A16_UINT; // verified to match OpenGL
-	case Latte::E_HWFMT::HWFMT_16_16_16_FLOAT:
+	case FMT_16_16_16_FLOAT:
 		return VK_FORMAT_R16G16B16_UINT;
-	case Latte::E_HWFMT::HWFMT_16_16_FLOAT:
+	case FMT_16_16_FLOAT:
 		return VK_FORMAT_R16G16_UINT;
-	case Latte::E_HWFMT::HWFMT_16_FLOAT:
+	case FMT_16_FLOAT:
 		return VK_FORMAT_R16_UINT;
-	case Latte::E_HWFMT::HWFMT_2_10_10_10:
+	case FMT_2_10_10_10:
 		return VK_FORMAT_R32_UINT; // verified to match OpenGL
 	default:
-		cemuLog_log(LogType::Force, "Unsupported vertex format: {:02x}", (uint32)format);
+		cemuLog_log(LogType::Force, "Unsupported vertex format: {:02x}", format);
 		assert_dbg();
 		return VK_FORMAT_UNDEFINED;
 	}
@@ -365,7 +415,7 @@ bool PipelineCompiler::InitShaderStages(VulkanRenderer* vkRenderer, RendererShad
 	return true;
 }
 
-void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader, PipelineInfo* pipelineInfo)
+void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader)
 {
 	vertexInputAttributeDescription.reserve(16);
 	vertexInputBindingDescription.reserve(fetchShader->bufferGroups.size());
@@ -373,7 +423,6 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
 	for (auto& bufferGroup : fetchShader->bufferGroups)
 	{
 		std::optional<LatteConst::VertexFetchType2> fetchType;
-		std::optional<uint32> bufferInstanceDivisor; // instance divisor for this buffer
 
 		for (sint32 j = 0; j < bufferGroup.attribCount; ++j)
 		{
@@ -397,9 +446,8 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
 
 			if (attr.fetchType == LatteConst::INSTANCE_DATA)
 			{
-				uint32 divisor = attr.GetInstanceDivisor(latteRegister.GetRawView());
-				cemu_assert_debug(!bufferInstanceDivisor.has_value() || bufferInstanceDivisor == divisor); // Latte can set different divisors per attribute and thus have more than one divisor per buffer, but we don't support this yet
-				bufferInstanceDivisor = divisor;
+				cemu_assert_debug(attr.aluDivisor == 1); // other divisor not yet supported
+				// use VK_EXT_vertex_attribute_divisor
 			}
 		}
 
@@ -424,30 +472,6 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
 		}
 		entry.binding = bufferIndex;
 		vertexInputBindingDescription.emplace_back(entry);
-
-		if (bufferInstanceDivisor.has_value() && entry.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE && bufferStride != 0 && bufferInstanceDivisor != 1)
-		{
-			uint32 instanceDivisor = *bufferInstanceDivisor;
-			auto vkRenderer = VulkanRenderer::GetInstance();
-			if (instanceDivisor > 1 && !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor && GetConfig().experimental_divisor_emulation)
-			{
-				// the driver cannot apply the divisor: read a single element per draw and let draw_submit advance it
-				static bool s_loggedEmulation = false;
-				if (!s_loggedEmulation)
-				{
-					s_loggedEmulation = true;
-					cemuLog_log(LogType::Force, "Vulkan: emulating vertex attribute divisors by splitting instanced draws (first divisor: {})", instanceDivisor);
-				}
-				vertexInputBindingDescription.back().stride = 0;
-				pipelineInfo->emulatedInstanceDivisors.push_back({bufferIndex, instanceDivisor, bufferStride});
-			}
-			else if (instanceDivisor == 0 || instanceDivisor > 0xFFFF || !vkRenderer->m_featureControl.deviceExtensions.vertex_attribute_divisor)
-			{
-				cemuLog_log(LogType::Force, "Vulkan: Unsupported vertex attribute divisor {}", instanceDivisor);
-			}
-			else
-				m_vertexInputBindingDivisors.push_back({bufferIndex, instanceDivisor});
-		}
 	}
 
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -455,13 +479,6 @@ void PipelineCompiler::InitVertexInputState(const LatteContextRegister& latteReg
 	vertexInputInfo.pVertexBindingDescriptions = vertexInputBindingDescription.data();
 	vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescription.size();
 	vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescription.data();
-	if (!m_vertexInputBindingDivisors.empty())
-	{
-		m_vertexInputDivisorState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR;
-		m_vertexInputDivisorState.vertexBindingDivisorCount = static_cast<uint32>(m_vertexInputBindingDivisors.size());
-		m_vertexInputDivisorState.pVertexBindingDivisors = m_vertexInputBindingDivisors.data();
-		vertexInputInfo.pNext = &m_vertexInputDivisorState;
-	}
 }
 
 void PipelineCompiler::InitInputAssemblyState(const Latte::LATTE_VGT_PRIMITIVE_TYPE::E_PRIMITIVE_TYPE primitiveMode)
@@ -849,10 +866,6 @@ void PipelineCompiler::InitDynamicState(PipelineInfo* pipelineInfo, bool usesBle
 		dynamicStates.emplace_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
 		pipelineInfo->usesDepthBias = true;
 	}
-	if (VulkanRenderer::GetInstance()->UseAttachmentFeedbackLoop())
-	{
-		dynamicStates.emplace_back(VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT);
-	}
 
 	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicState.dynamicStateCount = dynamicStates.size();
@@ -887,7 +900,7 @@ bool PipelineCompiler::InitFromCurrentGPUState(PipelineInfo* pipelineInfo, const
 	// ##########################################################################################################################################
 
 	pipelineInfo->primitiveMode = primitiveMode;
-	InitVertexInputState(latteRegister, pipelineInfo->vertexShader, pipelineInfo->fetchShader, pipelineInfo);
+	InitVertexInputState(latteRegister, pipelineInfo->vertexShader, pipelineInfo->fetchShader);
 	InitInputAssemblyState(primitiveMode);
 	InitViewportState();
 	bool usesDepthBias = false;
@@ -1034,19 +1047,6 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
 		retryCount++;
 	}
 
-	if (result == VK_ERROR_UNKNOWN && GetConfig().experimental_pipeline_retry)
-	{
-		// some drivers (observed on Adreno) report VK_ERROR_UNKNOWN: try once more without the pipeline cache
-		VkPipeline retryPipeline = VK_NULL_HANDLE;
-		const VkResult retryResult = vkCreateGraphicsPipelines(vkRenderer->m_logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &retryPipeline);
-		if (retryResult == VK_SUCCESS)
-		{
-			cemuLog_log(LogType::Force, "Graphics pipeline created after retrying without the pipeline cache");
-			pipeline = retryPipeline;
-			result = VK_SUCCESS;
-		}
-	}
-
 	if (result == VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT)
 	{
 		return false;
@@ -1057,9 +1057,7 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
 	}
 	else
 	{
-		cemuLog_log(LogType::Force, "Failed to create graphics pipeline. Error {} (vertex shader {:016x}, pixel shader {:016x}, geometry shader {:016x})", (sint32)result,
-			m_vkVertexShader ? m_vkVertexShader->GetBaseHash() : 0, m_vkPixelShader ? m_vkPixelShader->GetBaseHash() : 0, m_vkGeometryShader ? m_vkGeometryShader->GetBaseHash() : 0);
-		DumpShadersOfFailedPipeline();
+		cemuLog_log(LogType::Force, "Failed to create graphics pipeline. Error {}", (sint32)result);
 		cemu_assert_debug(false);
 		return true; // true indicates that caller should no longer attempt to compile this pipeline again
 	}
@@ -1084,31 +1082,6 @@ bool PipelineCompiler::Compile(bool forceCompile, bool isRenderThread, bool show
 		}
 	}
 	return true;
-}
-
-// saves the GLSL of the shaders of a pipeline that the driver refused to create, so the cause can be investigated
-void PipelineCompiler::DumpShadersOfFailedPipeline()
-{
-	static std::mutex s_dumpMutex;
-	static std::unordered_set<uint64> s_dumpedShaders;
-	std::lock_guard lock(s_dumpMutex);
-	const auto dumpShader = [](RendererShaderVk* shader, const char* stageName)
-	{
-		if (!shader)
-			return;
-		const uint64 baseHash = shader->GetBaseHash();
-		if (!s_dumpedShaders.insert(baseHash ^ (static_cast<uint64>(shader->GetType()) << 60)).second)
-			return;
-		std::error_code ec;
-		const fs::path directory = ActiveSettings::GetUserDataPath("shaderDump/failedPipelines");
-		fs::create_directories(directory, ec);
-		std::ofstream file(directory / fmt::format("{:016x}_{}.glsl", baseHash, stageName), std::ios::binary);
-		if (file.is_open())
-			file << shader->GetGlslCode();
-	};
-	dumpShader(m_vkVertexShader, "vertex");
-	dumpShader(m_vkPixelShader, "pixel");
-	dumpShader(m_vkGeometryShader, "geometry");
 }
 
 void PipelineCompiler::TrackAsCached(uint64 baseHash, uint64 pipelineStateHash)

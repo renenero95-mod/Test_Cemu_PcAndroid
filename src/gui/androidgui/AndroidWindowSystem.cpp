@@ -1,7 +1,14 @@
 #include "../interface/WindowSystem.h"
-#include "Cemu/Logging/CemuLogging.h"
+#include "Cafe/HW/Latte/Core/Latte.h"
+#include "config/ActiveSettings.h"
+#include "config/NetworkSettings.h"
+#include "config/CemuConfig.h"
+#include "Cafe/HW/Latte/Renderer/Renderer.h"
+#include "Cafe/CafeSystem.h"
 
 WindowSystem::WindowInfo g_window_info{};
+
+std::shared_mutex g_mutex;
 
 void WindowSystem::Create()
 {
@@ -9,7 +16,6 @@ void WindowSystem::Create()
 
 void WindowSystem::ShowErrorDialog(std::string_view message, std::string_view title, std::optional<WindowSystem::ErrorCategory> /*errorId*/)
 {
-	cemuLog_log(LogType::Force, "{} {}", title, message);
 }
 
 WindowSystem::WindowInfo& WindowSystem::GetWindowInfo()

@@ -6,7 +6,7 @@ class PipelineCompiler : public VKRMoveableRefCounter
 {
 private:
 	// helper functions
-	VkFormat GetVertexFormat(Latte::E_HWFMT format);
+	VkFormat GetVertexFormat(uint8 format);
 	bool ConsumesBlendConstants(VkBlendFactor blendFactor);
 
 	void CreateDescriptorSetLayout(VulkanRenderer* vkRenderer, LatteDecompilerShader* shader, VkDescriptorSetLayout& layout, PipelineInfo* vkrPipelineInfo);
@@ -21,7 +21,7 @@ private:
 
 	/* vertex input state */
 
-	void InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader, PipelineInfo* pipelineInfo);
+	void InitVertexInputState(const LatteContextRegister& latteRegister, LatteDecompilerShader* vertexShader, LatteFetchShader* fetchShader);
 	void InitInputAssemblyState(const Latte::LATTE_VGT_PRIMITIVE_TYPE::E_PRIMITIVE_TYPE primitiveMode);
 	void InitViewportState();
 	void InitRasterizerState(const LatteContextRegister& latteRegister, VulkanRenderer* vkRenderer, bool isPrimitiveRect, bool& usesDepthBias);
@@ -31,8 +31,6 @@ private:
 	void InitDynamicState(PipelineInfo* pipelineInfo, bool usesBlendConstants, bool usesDepthBias);
 
 public:
-	void DumpShadersOfFailedPipeline();
-
 	PipelineCompiler();
 	~PipelineCompiler();
 
@@ -63,8 +61,6 @@ public:
 	std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription;
 	std::vector<VkVertexInputBindingDescription> vertexInputBindingDescription;
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-	std::vector<VkVertexInputBindingDivisorDescriptionKHR> m_vertexInputBindingDivisors;
-	VkPipelineVertexInputDivisorStateCreateInfoKHR m_vertexInputDivisorState{};
 
 	/* input assembly state */
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};

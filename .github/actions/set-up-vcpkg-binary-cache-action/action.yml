@@ -24,9 +24,9 @@ runs:
       run: |
         function vcpkg_nuget() {
             if [ "$RUNNER_OS" == "Windows" ]; then
-                $(./dependencies/vcpkg/vcpkg.exe fetch nuget | tail -n 1) "$@"
+            `./dependencies/vcpkg/vcpkg.exe fetch nuget | tail -n 1` "$@"
             else
-                mono $(./dependencies/vcpkg/vcpkg fetch nuget | tail -n 1) "$@"
+            mono `./dependencies/vcpkg/vcpkg fetch nuget | tail -n 1` "$@"
             fi
         }
 

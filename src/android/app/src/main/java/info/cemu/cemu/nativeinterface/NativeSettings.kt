@@ -62,12 +62,6 @@ object NativeSettings {
     external fun setDownscalingFilter(value: Int)
 
     @JvmStatic
-    external fun getExperimentalOption(id: Int): Boolean
-
-    @JvmStatic
-    external fun setExperimentalOption(id: Int, value: Boolean)
-
-    @JvmStatic
     external fun getAccurateBarriers(): Boolean
 
     @JvmStatic

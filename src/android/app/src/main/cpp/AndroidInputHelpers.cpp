@@ -36,7 +36,7 @@ void EmulatedControllerManager::SetButtonValue(uint64 mappingId, bool value)
 		return;
 	}
 
-	m_emulatedController->set_button_value(mappingId, value);
+	m_emulatedController->setButtonValue(mappingId, value);
 }
 
 void EmulatedControllerManager::SetAxisValue(uint64 mappingId, float value)
@@ -46,7 +46,7 @@ void EmulatedControllerManager::SetAxisValue(uint64 mappingId, float value)
 		return;
 	}
 
-	m_emulatedController->set_axis_value(mappingId, value);
+	m_emulatedController->setAxisValue(mappingId, value);
 }
 
 void EmulatedControllerManager::SetType(EmulatedController::Type type)

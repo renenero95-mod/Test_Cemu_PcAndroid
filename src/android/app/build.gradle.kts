@@ -2,6 +2,7 @@ import com.android.build.gradle.internal.tasks.factory.dependsOn
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.regex.Pattern
+import javax.xml.bind.DatatypeConverter
 
 plugins {
     alias(libs.plugins.android.application)
@@ -113,7 +114,6 @@ android {
                     "-DENABLE_VCPKG=ON",
                     "-DVCPKG_TARGET_ANDROID=ON",
                     "-DENABLE_SDL=OFF",
-                    "-DENABLE_HIDAPI=OFF",
                     "-DENABLE_WXWIDGETS=OFF",
                     "-DENABLE_OPENGL=OFF",
                     "-DENABLE_BLUEZ=OFF",
@@ -121,6 +121,7 @@ android {
                     "-DENABLE_DISCORD_RPC=OFF",
                     "-DENABLE_NSYSHID_LIBUSB=OFF",
                     "-DENABLE_WAYLAND=OFF",
+                    "-DENABLE_HIDAPI=OFF"
                 )
                 if (versionMajor != null && versionMinor != null) {
                     arguments.addAll(
@@ -129,6 +130,16 @@ android {
                             "-DEMULATOR_VERSION_MINOR=$versionMinor"
                         )
                     )
+                }
+                // optional diagnostics build: ./gradlew :app:assembleDebug -PcemuDiagnostics=true
+                if (project.findProperty("cemuDiagnostics") == "true") {
+                    arguments.add("-DCEMU_ENABLE_DIAGNOSTICS=ON")
+                }
+                if (project.findProperty("cemuJitTrace") == "true") {
+                    arguments.add("-DCEMU_JIT_TRACE=ON")
+                }
+                if (project.findProperty("cemuNeural") == "false") {
+                    arguments.add("-DCEMU_ENABLE_NEURAL=OFF")
                 }
                 // abiFilters("arm64-v8a", "x86_64")
                 abiFilters("arm64-v8a")
@@ -181,11 +192,7 @@ abstract class ComputeCemuDataFilesHashTask : DefaultTask() {
                 digest.update(it.readBytes())
             }
 
-        hashOutFile.writeText(
-            digest.digest().joinToString(separator = "") { byte ->
-                byte.toUByte().toString(16).padStart(2, '0').uppercase()
-            }
-        )
+        hashOutFile.writeText(DatatypeConverter.printHexBinary(digest.digest()))
     }
 }
 

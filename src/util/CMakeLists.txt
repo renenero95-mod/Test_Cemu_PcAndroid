@@ -1,4 +1,5 @@
 add_library(CemuUtil
+  boost/bluetooth.h
   bootSound/BootSoundReader.cpp
   bootSound/BootSoundReader.h
   ChunkedHeap/ChunkedHeap.h
@@ -27,7 +28,6 @@ add_library(CemuUtil
   helpers/MapAdaptor.h
   helpers/MemoryPool.h
   helpers/ringbuffer.h
-  helpers/StateHasher.h
   helpers/Semaphore.h
   helpers/Serializer.cpp
   helpers/Serializer.h
@@ -38,20 +38,19 @@ add_library(CemuUtil
   helpers/SystemException.h
   helpers/TempState.h
   helpers/ZArchiveHelpers.h
-  helpers/ZipArchive.h
   highresolutiontimer/HighResolutionTimer.cpp
   highresolutiontimer/HighResolutionTimer.h
   ImageWriter/bmp.h
   ImageWriter/tga.h
   IniParser/IniParser.cpp
   IniParser/IniParser.h
+  libusbWrapper/libusbWrapper.cpp
+  libusbWrapper/libusbWrapper.h
   math/glm.h
   math/quaternion.h
   math/vector2.h
   math/vector3.h
   MemMapper/MemMapper.h
-  Socket/Socket.cpp
-  Socket/Socket.h
   SystemInfo/SystemInfo.cpp
   SystemInfo/SystemInfo.h
   ThreadPool/ThreadPool.h
@@ -97,13 +96,6 @@ endif()
 set_property(TARGET CemuUtil PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 cemu_use_precompiled_header(CemuUtil)
-
-if (ENABLE_LIBUSB)
-  target_sources(CemuUtil PRIVATE
-    libusbWrapper/libusbWrapper.cpp
-    libusbWrapper/libusbWrapper.h
-  )
-endif()
 
 target_include_directories(CemuUtil PUBLIC "../")
 

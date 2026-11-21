@@ -5,6 +5,9 @@
 #include "input/emulated/ClassicController.h"
 #include "input/emulated/WiimoteController.h"
 
+#if HAS_SDL
+#include "input/api/SDL/SDLController.h"
+#endif // HAS_SDL
 #include "input/api/Keyboard/KeyboardController.h"
 #include "input/api/DSU/DSUController.h"
 #include "input/api/GameCube/GameCubeController.h"
@@ -16,10 +19,6 @@
 
 #if HAS_WIIMOTE
 #include "input/api/Wiimote/NativeWiimoteController.h"
-#endif
-
-#ifdef HAS_SDL
-#include "input/api/SDL/SDLController.h"
 #endif
 
 #if BOOST_PLAT_ANDROID
@@ -67,7 +66,7 @@ ControllerPtr ControllerFactory::CreateController(InputAPI::Type api, std::strin
 			return std::make_shared<XInputController>(index);
 		}
 #endif
-#ifdef HAS_SDL
+#if HAS_SDL
 	case InputAPI::SDLController:
 		{
 			// diid_guid
@@ -76,7 +75,7 @@ ControllerPtr ControllerFactory::CreateController(InputAPI::Type api, std::strin
 				throw std::invalid_argument(fmt::format("invalid sdl uuid format: {}", uuid));
 
 			const auto guid_index = ConvertString<size_t>(uuid.substr(0, index));
-			const auto guid = SDL_StringToGUID(std::string{uuid.substr(index + 1)}.c_str());
+			const auto guid = SDL_JoystickGetGUIDFromString(std::string{uuid.substr(index + 1)}.c_str());
 
 			if (display_name.empty())
 				return std::make_shared<SDLController>(guid, guid_index);
@@ -91,7 +90,7 @@ ControllerPtr ControllerFactory::CreateController(InputAPI::Type api, std::strin
 			return std::make_shared<DSUController>(index);
 		}
 #endif
-#if defined(HAS_GAMECUBE) && HAS_GAMECUBE && defined(HAS_LIBUSB)
+#if HAS_GAMECUBE
 	case InputAPI::GameCube:
 		{
 			const auto index = uuid.find_first_of('_');
@@ -151,7 +150,7 @@ ControllerProviderPtr ControllerFactory::CreateControllerProvider(InputAPI::Type
 	case InputAPI::Keyboard:
 		return std::make_shared<KeyboardControllerProvider>();
 #endif
-#ifdef HAS_SDL
+#if HAS_SDL
 	case InputAPI::SDLController:
 		return std::make_shared<SDLControllerProvider>();
 #endif
@@ -179,7 +178,7 @@ ControllerProviderPtr ControllerFactory::CreateControllerProvider(InputAPI::Type
 		}
 
 #endif
-#if defined(HAS_GAMECUBE) && HAS_GAMECUBE && defined(HAS_LIBUSB)
+#if HAS_GAMECUBE
 	case InputAPI::GameCube:
 		return std::make_shared<GameCubeControllerProvider>();
 #endif

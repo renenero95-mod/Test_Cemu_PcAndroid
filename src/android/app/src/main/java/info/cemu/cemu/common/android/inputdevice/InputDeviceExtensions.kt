@@ -12,8 +12,8 @@ fun InputDevice.isGameController(): Boolean {
         return false
     }
 
-    return (sources and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
-            || (sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
+    return (sources and InputDevice.SOURCE_GAMEPAD)== InputDevice.SOURCE_GAMEPAD
+            || (sources and InputDevice.SOURCE_JOYSTICK)== InputDevice.SOURCE_JOYSTICK
             || (sources and InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD
 }
 
@@ -32,7 +32,6 @@ fun InputDevice.toControllerInfo(): NativeInput.ControllerInfo {
 fun listGameControllers() = InputDevice.getDeviceIds()
     .mapNotNull { InputDevice.getDevice(it) }
     .filter { it.isGameController() }
-    .sortedWith(compareBy({ it.name }, { it.descriptor }))
 
 fun InputDevice.hasRumble(): Boolean {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

@@ -20,7 +20,7 @@ private:
 		cemu_assert_debug(format.empty() || (format[0] != L'/' && format[0] != L'\\'));
 		return path / fmt::format(fmt::runtime(format), std::forward<TArgs>(args)...);
 	}
-	static fs::path GetPath(const fs::path& path, std::string_view p) 
+	static fs::path GetPath(const fs::path& path, std::string_view p)
 	{
 		std::basic_string_view<char8_t> s((const char8_t*)p.data(), p.size());
 		return path / fs::path(s);
@@ -105,7 +105,7 @@ public:
 	[[nodiscard]] static uint8 GetTimerShiftFactor();
 
 	static void SetTimerShiftFactor(uint8 shiftFactor);
-	
+
 	// gpu
 	[[nodiscard]] static PrecompiledShaderOption GetPrecompiledShadersOption();
 	[[nodiscard]] static bool RenderUpsideDownEnabled();

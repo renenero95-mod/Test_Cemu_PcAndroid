@@ -45,13 +45,10 @@
 
 #define FMT_CONV_NUM_ROWS       16
 
-/** Decoder currently has an additional latency of 1 picture when
+/** Decoder currently has an additional latency of 2 pictures when
   * returning output for display
   */
-#define DISPLAY_LATENCY         1
-
-/* Cemu: keep at most 5 pictures for presentation */
-#define MAX_DISPLAY_DELAY       5
+#define DISPLAY_LATENCY         2
 
 /** Bit manipulation macros */
 #define CHECKBIT(a,i) ((a) &  (1 << i))
