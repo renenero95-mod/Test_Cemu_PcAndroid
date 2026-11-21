@@ -16,6 +16,9 @@ def referenced_paths(root):
                 text = re.sub(r"(?m)^\s*#.*$", "", text)  # comments
                 for m in re.finditer(r'dependencies/([A-Za-z0-9_.\-]+(?:/[A-Za-z0-9_.\-]+)*)', text):
                     path = "dependencies/" + m.group(1)
+                    # Metal is an Apple-only backend.
+                    if path == "dependencies/metal-cpp" and sys.platform != "darwin":
+                        continue
                     if "${" not in path and not path.endswith("."):
                         refs.setdefault(path, []).append(os.path.relpath(p, root))
     return refs
