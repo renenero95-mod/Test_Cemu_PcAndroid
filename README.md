@@ -1,32 +1,63 @@
-# Cemu+ Inspection
+# Console2Android
 
-Cemu+ Inspection è un progetto di analisi e miglioramento tecnico di Cemu per Android, pensato per studiare il funzionamento interno dell'emulatore e individuare possibili ottimizzazioni in termini di prestazioni, compatibilità e stabilità.
+**AI development brief and technical starter specification**
 
-Il progetto introduce un sistema di PPC Pre-Execution Analysis: un analizzatore che esamina il codice PowerPC dei giochi durante il caricamento, prima della sua esecuzione, raccogliendo informazioni sulle istruzioni e organizzandole in una cache consultabile.
+Console2Android is a planned Android application that aims to transform legally obtained Xbox 360 game data into a reusable Android-native game package, using ahead-of-time recompilation where feasible, compatibility implementations, and interpreter/JIT fallback for code that cannot safely be translated in advance.
 
-### Obiettivi principali
+The first backend is **Xbox 360**. A future PS3 backend may be added behind the same high-level interfaces, but PS3 is explicitly out of scope for the initial implementation.
 
-- Analizzare preventivamente le sezioni di codice PowerPC eseguibili.
-- Identificare le istruzioni supportate, non supportate o da approfondire.
-- Creare una cache dei risultati per evitare analisi ripetute.
-- Fornire informazioni utili per migliorare interpreter e JIT.
-- Individuare potenziali problemi di compatibilità e stabilità.
-- Misurare i miglioramenti con test e benchmark reali.
+> **Important feasibility statement:** this repository is a specification and development starter, not a working Xbox 360-to-Android converter. A general-purpose converter for arbitrary commercial Xbox 360 games is a major research and engineering project. The AI must not claim that a feature works until it has a tested implementation. Start with a narrowly scoped proof of concept and expand only when evidence supports it.
 
-### Come funziona
+## Product idea
 
-1. Cemu carica normalmente il gioco.
-2. L'Inspector individua le sezioni contenenti codice eseguibile.
-3. Analizza le istruzioni PowerPC senza eseguirle.
-4. Registra i risultati in una struttura indicizzata per indirizzo.
-5. Salva i metadati in una cache associata al gioco e alla versione del sistema di analisi.
-6. Le informazioni potranno essere consultate dai componenti dell'emulatore, mantenendo il comportamento originale come fallback.
+1. The user imports legally obtained game data.
+2. The app analyzes it and creates a conversion job.
+3. The conversion pipeline extracts/analyzes assets and executable content, translates what it can, and records unsupported or uncertain parts.
+4. Recovery strategies are attempted in a controlled order.
+5. A final automated validation runs.
+6. The result is stored as a separate converted-game folder/package.
+7. The same Android app exposes a separate **Converted Games** section where the user can launch the result, configure graphics/input, inspect diagnostics, and perform manual gameplay testing.
+8. During gameplay, untranslated or unsupported code may use a compatible interpreter/JIT path when technically possible. Such events are recorded in a lightweight diagnostic log.
 
-### Filosofia del progetto
+## Non-negotiable engineering principles
 
-La priorità è migliorare Cemu senza compromettere la correttezza dell'emulazione. L'analisi iniziale sarà passiva: nessuna istruzione verrà modificata o saltata automaticamente. Eventuali ottimizzazioni saranno introdotte solo dopo verifiche tecniche e benchmark.
+- Correctness before conversion percentage or speed.
+- Never silently label unverified output as stable.
+- Never invent console APIs, binary formats, or tool capabilities.
+- Every module must have tests and documented limitations.
+- Keep the original imported game data immutable.
+- Keep generated output, runtime, global cache, per-game cache, profiles, and reports separate.
+- Runtime fallback must preserve the source platform's observable semantics; if it cannot, report the limitation rather than guessing.
+- The app must not distribute copyrighted game content, console firmware, keys, or proprietary SDK components.
+- Respect licenses of all third-party code and tools.
+- Do not bypass console security or DRM. Work only with legally obtained, user-provided data and supported research workflows.
 
+## Documents
 
-### Stato lavori
+- [`CONSOLE2ANDROID_MASTER_PLAN.md`](CONSOLE2ANDROID_MASTER_PLAN.md) — product and technical specification.
+- [`AI_DEVELOPMENT_RULES.md`](AI_DEVELOPMENT_RULES.md) — instructions for the AI coding agent.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — component boundaries and data flow.
+- [`DEVELOPMENT_ROADMAP.md`](DEVELOPMENT_ROADMAP.md) — staged implementation and exit criteria.
+- [`BUILD_AND_CI.md`](BUILD_AND_CI.md) — local and GitHub Actions build strategy.
+- [`TESTING_AND_VALIDATION.md`](TESTING_AND_VALIDATION.md) — quality gates and final checks.
+- [`docs/DIAGNOSTICS_AND_REPORTS.md`](docs/DIAGNOSTICS_AND_REPORTS.md) — concise user report and technical logs.
+- [`docs/RECOVERY_CACHE_RUNTIME.md`](docs/RECOVERY_CACHE_RUNTIME.md) — recovery, interpreter/JIT, and cache requirements.
+- [`docs/GRAPHICS_INPUT_UI.md`](docs/GRAPHICS_INPUT_UI.md) — graphics profiles, touch controls, FPS overlay, and app UX.
+- [`docs/LEGAL_AND_DEPENDENCIES.md`](docs/LEGAL_AND_DEPENDENCIES.md) — licensing and dependency policy.
+- [`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml) — starter CI workflow; it must be adapted to the actual project and pinned dependencies before release.
 
-- **Fase 1** (analisi + pulizia sicura): vedi `docs/CEMU_FASE1_REPORT.md`. Diagnostiche e log JIT ora spenti di default; analizzatore PPC compatto. Dipendenze: `docs/THIRD_PARTY_DEPENDENCIES.md`.
+## First milestone
+
+Do not begin by promising support for arbitrary Xbox 360 titles. First prove the pipeline with:
+- a legally usable test executable or purpose-built test fixture;
+- a documented, narrow CPU instruction subset;
+- a minimal runtime bridge on Android ARM64;
+- deterministic correctness tests comparing reference and translated behavior;
+- one minimal rendering/input/audio path, only as the scope permits.
+
+A successful first milestone is a reproducible, testable vertical slice—not a visually complete launcher with a nonfunctional backend.
+
+## Current state
+
+See `PROJECT_PROGRESS.md` (completed / remaining / blockers / verification). Session rules: `AI_DEVELOPMENT_RULES.md` §12.
+Phase 0 audit: `docs/PHASE0_DEPENDENCY_AUDIT.md`. Phase 0/3 PoC proposal: `docs/PHASE0_POC_PROPOSAL.md`.
