@@ -1,0 +1,15 @@
+CemuFixer - raccolta completa per audit Android
+
+Contenuto:
+- snapshots/android-port: tutti i file tracciati del branch android-port
+- snapshots/upstream__main: tutti i file tracciati di upstream/main
+- snapshots/upstream__pr-1909: tutti i file tracciati della PR Android
+- diffs: patch complete e statistiche tra i tre ref
+- submodules: sorgenti dei submodule inizializzati nel checkout corrente
+- metadata: commit, gitlink, stato Git, remotes redatti, ambiente Android
+- audit_docs: Markdown, note e documentazione presenti nel repository
+- local_changes: diff locali e stato dei file non committati
+
+Non contiene .git, credenziali, SDK/NDK, cache Gradle o directory build.
+Le patch e gli snapshot sono per analisi statica; non modificano il repository.
+I gitlink dei submodule per ogni ref sono in metadata/*_gitlinks_submodules.txt.

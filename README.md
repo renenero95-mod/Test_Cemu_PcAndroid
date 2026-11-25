@@ -1,63 +1,200 @@
-# Console2Android
+# CemuFixerAPC — Cemu for Android
 
-**AI development brief and technical starter specification**
+[![Android Build](https://github.com/renenero95-mod/CemuFixerAPC/actions/workflows/build_check.yml/badge.svg?branch=android-port)](https://github.com/renenero95-mod/CemuFixerAPC/actions/workflows/build_check.yml)
+[![Upstream Cemu](https://img.shields.io/badge/upstream-Cemu-blue)](https://github.com/cemu-project/Cemu)
+[![Platform](https://img.shields.io/badge/platform-Android-green)](https://www.android.com/)
+[![Architecture](https://img.shields.io/badge/ABI-arm64--v8a-orange)](https://developer.android.com/ndk/guides/abis)
 
-Console2Android is a planned Android application that aims to transform legally obtained Xbox 360 game data into a reusable Android-native game package, using ahead-of-time recompilation where feasible, compatibility implementations, and interpreter/JIT fallback for code that cannot safely be translated in advance.
+**CemuFixerAPC is an Android-focused fork of Cemu**, the open-source Wii U emulator.
 
-The first backend is **Xbox 360**. A future PS3 backend may be added behind the same high-level interfaces, but PS3 is explicitly out of scope for the initial implementation.
+This repository brings the Android port together with selected upstream Cemu improvements, fixes and maintenance changes, with the goal of providing an updated and maintainable Cemu experience on Android devices.
 
-> **Important feasibility statement:** this repository is a specification and development starter, not a working Xbox 360-to-Android converter. A general-purpose converter for arbitrary commercial Xbox 360 games is a major research and engineering project. The AI must not claim that a feature works until it has a tested implementation. Start with a narrowly scoped proof of concept and expand only when evidence supports it.
+The project is focused on Android. It is not intended to provide Windows, Linux or macOS builds.
 
-## Product idea
+> CemuFixerAPC is an independent community project. It is not an official release of the Cemu project and is not affiliated with or endorsed by the original Cemu developers.
 
-1. The user imports legally obtained game data.
-2. The app analyzes it and creates a conversion job.
-3. The conversion pipeline extracts/analyzes assets and executable content, translates what it can, and records unsupported or uncertain parts.
-4. Recovery strategies are attempted in a controlled order.
-5. A final automated validation runs.
-6. The result is stored as a separate converted-game folder/package.
-7. The same Android app exposes a separate **Converted Games** section where the user can launch the result, configure graphics/input, inspect diagnostics, and perform manual gameplay testing.
-8. During gameplay, untranslated or unsupported code may use a compatible interpreter/JIT path when technically possible. Such events are recorded in a lightweight diagnostic log.
+---
 
-## Non-negotiable engineering principles
+## Project goals
 
-- Correctness before conversion percentage or speed.
-- Never silently label unverified output as stable.
-- Never invent console APIs, binary formats, or tool capabilities.
-- Every module must have tests and documented limitations.
-- Keep the original imported game data immutable.
-- Keep generated output, runtime, global cache, per-game cache, profiles, and reports separate.
-- Runtime fallback must preserve the source platform's observable semantics; if it cannot, report the limitation rather than guessing.
-- The app must not distribute copyrighted game content, console firmware, keys, or proprietary SDK components.
-- Respect licenses of all third-party code and tools.
-- Do not bypass console security or DRM. Work only with legally obtained, user-provided data and supported research workflows.
+- Maintain and improve the Android version of Cemu.
+- Integrate relevant fixes and improvements from the upstream Cemu project when they are compatible with the Android port.
+- Keep Android-specific code and build configuration maintainable.
+- Improve stability, compatibility and graphics handling.
+- Make Android builds reproducible through GitHub Actions.
+- Document changes and distinguish implemented work from features that still require testing.
 
-## Documents
+Upstream improvements are not automatically Android-compatible. Each change must be evaluated in the context of the Android port.
 
-- [`CONSOLE2ANDROID_MASTER_PLAN.md`](CONSOLE2ANDROID_MASTER_PLAN.md) — product and technical specification.
-- [`AI_DEVELOPMENT_RULES.md`](AI_DEVELOPMENT_RULES.md) — instructions for the AI coding agent.
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — component boundaries and data flow.
-- [`DEVELOPMENT_ROADMAP.md`](DEVELOPMENT_ROADMAP.md) — staged implementation and exit criteria.
-- [`BUILD_AND_CI.md`](BUILD_AND_CI.md) — local and GitHub Actions build strategy.
-- [`TESTING_AND_VALIDATION.md`](TESTING_AND_VALIDATION.md) — quality gates and final checks.
-- [`docs/DIAGNOSTICS_AND_REPORTS.md`](docs/DIAGNOSTICS_AND_REPORTS.md) — concise user report and technical logs.
-- [`docs/RECOVERY_CACHE_RUNTIME.md`](docs/RECOVERY_CACHE_RUNTIME.md) — recovery, interpreter/JIT, and cache requirements.
-- [`docs/GRAPHICS_INPUT_UI.md`](docs/GRAPHICS_INPUT_UI.md) — graphics profiles, touch controls, FPS overlay, and app UX.
-- [`docs/LEGAL_AND_DEPENDENCIES.md`](docs/LEGAL_AND_DEPENDENCIES.md) — licensing and dependency policy.
-- [`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml) — starter CI workflow; it must be adapted to the actual project and pinned dependencies before release.
+## Android support
 
-## First milestone
+The current Android application configuration includes:
 
-Do not begin by promising support for arbitrary Xbox 360 titles. First prove the pipeline with:
-- a legally usable test executable or purpose-built test fixture;
-- a documented, narrow CPU instruction subset;
-- a minimal runtime bridge on Android ARM64;
-- deterministic correctness tests comparing reference and translated behavior;
-- one minimal rendering/input/audio path, only as the scope permits.
+| Component | Configuration |
+|---|---|
+| Platform | Android |
+| Minimum Android version | Android 11 (API 30) |
+| Target SDK | API 35 |
+| Native ABI | arm64-v8a |
+| Graphics API | Vulkan |
+| Native build | CMake |
+| Android NDK | 29.0.14206865 |
+| Gradle wrapper | 9.4.1 |
 
-A successful first milestone is a reproducible, testable vertical slice—not a visually complete launcher with a nonfunctional backend.
+Actual compatibility and performance depend on the device, GPU, Vulkan driver, Android version and individual game.
 
-## Current state
+**Important:** Meeting the minimum Android requirements does not guarantee that every Wii U game will run correctly or at full speed.
 
-See `PROJECT_PROGRESS.md` (completed / remaining / blockers / verification). Session rules: `AI_DEVELOPMENT_RULES.md` §12.
-Phase 0 audit: `docs/PHASE0_DEPENDENCY_AUDIT.md`. Phase 0/3 PoC proposal: `docs/PHASE0_POC_PROPOSAL.md`.
+## Upstream improvements and Android integration
+
+CemuFixerAPC is based on the Cemu codebase and incorporates Android-specific integration alongside selected upstream changes.
+
+The development process aims to preserve relevant improvements from the PC project where technically appropriate, including:
+
+- Emulator stability and crash prevention fixes.
+- Graphics and shader handling improvements.
+- Core emulation corrections.
+- Compatibility fixes.
+- Maintenance and build-system updates.
+
+Android-specific changes are necessary because Android has different application, filesystem, graphics-driver and native-build requirements.
+
+### Integrated work
+
+The Android branch includes, among other work:
+
+- Integration of the Android port with the Cemu codebase.
+- Android native build configuration for arm64-v8a.
+- Pinned submodule revisions for reproducible dependency retrieval.
+- Android build scripts and GitHub Actions integration.
+- A null-pointer protection fix in the Latte GS copy-shader handling.
+
+The exact state of integration and validation is tracked in the repository's technical audit and build-status documentation.
+
+Not every upstream PC feature or improvement is necessarily available on Android.
+
+## Download
+
+### Android builds
+
+The latest available Android CI builds can be found here:
+
+**[Open CemuFixerAPC GitHub Actions](https://github.com/renenero95-mod/CemuFixerAPC/actions/workflows/build_check.yml)**
+
+To obtain a build:
+
+1. Open the Actions page.
+2. Select a successful Android workflow run.
+3. Open the run's **Artifacts** section.
+4. Download the available Android build artifact.
+5. Extract the downloaded archive and locate the APK.
+
+Build artifacts are generated by GitHub Actions and may be subject to automatic retention limits.
+
+A successful compilation does not mean that every game or device has been tested.
+
+Only install APK files from a source you trust.
+
+## Building from source
+
+The Android build configuration and scripts are maintained in this repository.
+
+Relevant files:
+
+- `scripts/build_android_debug.sh` — Android debug build script.
+- `scripts/fetch_submodules.sh` — retrieves the pinned submodule revisions.
+- `SUBMODULES.lock` — records the dependency revisions.
+- `.github/workflows/build.yml` — Android build workflow.
+- `.github/workflows/build_check.yml` — build-check workflow.
+
+The Android build requires a compatible Java/Gradle environment, Android SDK, Android NDK and CMake toolchain.
+
+For the configured local build process, see:
+
+```bash
+scripts/fetch_submodules.sh
+scripts/build_android_debug.sh
+```
+
+The GitHub Actions workflow is the recommended reference for the project's automated Android build.
+
+## Technical documentation
+
+The repository includes technical documentation describing the Android port, integration work, build configuration and known issues.
+
+- `audit.md` — technical audit.
+- `docs/TECHNICAL_AUDIT.md` — technical audit documentation.
+- `BUILD_STATUS.md` — build status and validation notes.
+- `SUBMODULES.lock` — pinned dependency revisions.
+
+These documents should be consulted when checking the precise implementation and validation status of individual changes.
+
+## Compatibility and bug reports
+
+Compatibility varies considerably between games and Android devices.
+
+When reporting a problem, please include:
+
+- Device model and chipset.
+- Android version.
+- GPU and Vulkan driver version, if available.
+- Game title and region.
+- Whether the problem occurs consistently.
+- Relevant Cemu logs and crash information.
+- The GitHub Actions build or commit used.
+
+Please distinguish between:
+- Application startup failures.
+- Graphics or shader problems.
+- Game-specific crashes.
+- Performance issues.
+- Device or Vulkan-driver compatibility problems.
+
+A game crash does not necessarily indicate a problem in the Android application itself; it may also originate in the emulation core, the game or the graphics driver.
+
+**Do not include copyrighted game files, keys, firmware or other proprietary material in bug reports.**
+
+## Original project and credits
+
+CemuFixerAPC builds upon the work of the original Cemu developers and contributors.
+
+- **Original Cemu project:** https://github.com/cemu-project/Cemu
+- **Original Cemu website:** https://cemu.info
+- **Cemu compatibility wiki:** https://wiki.cemu.info/wiki/Main_Page
+- **Cemu community:** https://discord.gg/5psYsup
+- **Cemu language repository:** https://github.com/cemu-project/Cemu-Language
+- **Community graphic packs:** https://github.com/cemu-project/cemu_graphic_packs
+
+All original authors retain credit for their respective contributions. Android-specific modifications and contributions in this fork do not replace or remove upstream attribution.
+
+## Third-party components and licensing
+
+CemuFixerAPC contains and uses code originating from Cemu and third-party dependencies.
+
+Cemu is licensed under the **Mozilla Public License 2.0 (MPL-2.0)**.
+
+The licensing terms of the original project continue to apply. Files in the dependencies directory may be subject to their respective original licenses. Certain individual source files may also contain specific licensing notices in their headers.
+
+Please consult:
+
+- [`LICENSE.txt`](LICENSE.txt)
+- The license notices in individual source files.
+- The original licenses and notices included with third-party dependencies.
+
+When redistributing this project or modified versions of its source code, retain all applicable copyright notices, license texts, attribution and third-party notices, and comply with the applicable license terms.
+
+This repository does not grant ownership of or redistribute proprietary Nintendo software, firmware, encryption keys or copyrighted game content.
+
+Users are responsible for obtaining and using their own legally acquired game files and other required materials.
+
+## Disclaimer
+
+CemuFixerAPC is provided on an experimental, community-development basis.
+
+No guarantee is made that every game, device or Android configuration will work correctly. Builds may contain bugs, incomplete features or device-specific limitations.
+
+The project is not affiliated with Nintendo or the official Cemu development team.
+
+---
+
+**CemuFixerAPC — Android development based on the open-source Cemu project.**
