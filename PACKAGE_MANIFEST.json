@@ -1,0 +1,382 @@
+{
+  "project": "Console2Android",
+  "package_type": "AI development project (specification + incremental implementation)",
+  "status": "in_development_see_PROJECT_PROGRESS_md",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "size_bytes": 65,
+      "sha256": "0b619c5c23b32a031fcf4ff982bdc2fa387d779e28fa9b02482ad5d323f3cf28"
+    },
+    {
+      "path": ".gitignore",
+      "size_bytes": 107,
+      "sha256": "53d975ad800246479de17f431cf15b3dc988689815a89610bb85908f68eec6ca"
+    },
+    {
+      "path": "AI_DEVELOPMENT_RULES.md",
+      "size_bytes": 7732,
+      "sha256": "a4ddd5511bbbeaa342105a32d77dd6590d64afae540a5a65ce1dc2187c11577b"
+    },
+    {
+      "path": "AI_START_PROMPT.md",
+      "size_bytes": 2925,
+      "sha256": "55d603a42b41f9d45295d2198765f373aa6dd12a1cbb7ec8003937e5f3be615f"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "size_bytes": 4398,
+      "sha256": "31723feeab8e7a4cf659ff06a8ccf9ad3a1b5eb981e16e1340755f3a7094099d"
+    },
+    {
+      "path": "BUILD_AND_CI.md",
+      "size_bytes": 2654,
+      "sha256": "6094eb6b27ede3189f0fc378fc1eb65f395fb2db4999f9c1b98222156454bbf9"
+    },
+    {
+      "path": "CHECK.md",
+      "size_bytes": 1617,
+      "sha256": "ab4cfa132c77d405a2ee4f8afbe342be8dd3e0cb9e866bbcd646a4816af11735"
+    },
+    {
+      "path": "CONSOLE2ANDROID_MASTER_PLAN.md",
+      "size_bytes": 15989,
+      "sha256": "ec65486b4a2577d0db7da11ab8534043b7160f4371943526c6a84bc7eaa2c400"
+    },
+    {
+      "path": "DEVELOPMENT_ROADMAP.md",
+      "size_bytes": 4084,
+      "sha256": "6b338c245fc273ebbb01b71cfb6340b1a67d91292e6e1d18cdbe0284a94fe734"
+    },
+    {
+      "path": "PROJECT_PROGRESS.md",
+      "size_bytes": 7479,
+      "sha256": "0b4f64b17a93ef8a6b1f12a7dc2fb57f1a3ff517e356d1f002c795a9c58997cc"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 5555,
+      "sha256": "c367c93a58005b8e3d5ed909cbe70ae4bc40e6442481582ebeaf8998fffb9f28"
+    },
+    {
+      "path": "TESTING_AND_VALIDATION.md",
+      "size_bytes": 2647,
+      "sha256": "5b55e160acddc560b481662c8c154ffcc548369bdc53e88cf755b4c23a9453ec"
+    },
+    {
+      "path": "build.gradle.kts",
+      "size_bytes": 308,
+      "sha256": "7ef84669a57399573d9fbe3060eefe6d4c1da4e6562365c4e12687210d4fce42"
+    },
+    {
+      "path": "gradle.properties",
+      "size_bytes": 157,
+      "sha256": "120f7a6414690b79d5a1e900324ee1d89d0e5e793223faba2c85a5467f54c7e6"
+    },
+    {
+      "path": "gradlew",
+      "size_bytes": 8733,
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "gradlew.bat",
+      "size_bytes": 2937,
+      "sha256": "1d297e00bd21de3ace22b4d7f2de1f9dfa858883d66bbf7c1ccbecccec8f4f3b"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "size_bytes": 344,
+      "sha256": "04317cc886cb0f2f000d81d6602b3f428f5aab9ba993e5ad5f24a71d6543bf4d"
+    },
+    {
+      "path": ".github/workflows/android-ci.yml",
+      "size_bytes": 4229,
+      "sha256": "76b5fcc5103786a98340d6c72569f8dc56727b738f8b5ce6482d568207a0989d"
+    },
+    {
+      "path": "app/build.gradle.kts",
+      "size_bytes": 1230,
+      "sha256": "c48a8f05f8ef5dc18385ca7c58ae2bf618db7a3b0a0c57503c4bffce2f183256"
+    },
+    {
+      "path": "app/src/main/AndroidManifest.xml",
+      "size_bytes": 608,
+      "sha256": "88a6c04118dfdcb39c0834c20175d6e15ce6e063504bef8401e36327d1bf1291"
+    },
+    {
+      "path": "app/src/main/kotlin/dev/console2android/app/MainActivity.kt",
+      "size_bytes": 30517,
+      "sha256": "b048da0dcb58d30c1b7260e86da7aef27a7272286d4686c2779e85651b5ed6b6"
+    },
+    {
+      "path": "app/src/main/kotlin/dev/console2android/app/XexIdentifierStore.kt",
+      "size_bytes": 1301,
+      "sha256": "7362eb83e199c845af1d66da6f32dba6621b6ec2c51ef80082a0c12e7cc7969a"
+    },
+    {
+      "path": "app/src/main/res/values/themes.xml",
+      "size_bytes": 157,
+      "sha256": "1ce804dd024967bacab3ace360c42d81448558693c462840224dafc184695680"
+    },
+    {
+      "path": "app/src/main/res/values-night/themes.xml",
+      "size_bytes": 151,
+      "sha256": "209e3a942d2392a3878a79ef336b6da5e8971cf0972bbf782d57c144fe38057e"
+    },
+    {
+      "path": "core/build.gradle.kts",
+      "size_bytes": 625,
+      "sha256": "5004b5fb5c089250ed77bec881c06cdf654acefb587f98dbddb1ce99773520e0"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/convert/ConvertedPackage.kt",
+      "size_bytes": 10507,
+      "sha256": "6329f6b161cc5f6f9ac43d42c473cf6e4dcdb0dee69059ab9caddb38b29a7db8"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/convert/Fx1Stages.kt",
+      "size_bytes": 12353,
+      "sha256": "0855141994ee10bc3d7178597e8cafaa9ca9813774d37f5c4e57d2a8da269b08"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/convert/PackageValidator.kt",
+      "size_bytes": 9147,
+      "sha256": "295729168ad9b656a8de12b8cf59b458a644cb820bcd095714fb841318f7f037"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/convert/Pipeline.kt",
+      "size_bytes": 10461,
+      "sha256": "b000ff5e5b37ab731a8e899c4d7f998b1ec70a6caa7711a165d2835ac2e56844"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/diag/Diagnostics.kt",
+      "size_bytes": 2889,
+      "sha256": "3f553c5e4ee88f9d04b9557ad099cd54cba85417f5c27c459b5fc24fe6c1d395"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/fx1/Fx1.kt",
+      "size_bytes": 4640,
+      "sha256": "8cd38b783c3564bc7f00324496d94e2648020f38c000d11d20220f1658469d1b"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/fx1/Fx1Samples.kt",
+      "size_bytes": 1909,
+      "sha256": "1a7bea5090b2643c10ce2c8cf568590b3510e9a84a42e4cdeccbf6ebee66fc3e"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ir/Ir.kt",
+      "size_bytes": 2875,
+      "sha256": "23016e69bc3b8a98b521a6c3d0af940f395696e22d892aa0bd0b6cfe8346d036"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ir/IrExecutor.kt",
+      "size_bytes": 6820,
+      "sha256": "347b7ad193099a84742a94b74df5ba890059d36990f4d4baabc6792830dccebf"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ir/IrText.kt",
+      "size_bytes": 8169,
+      "sha256": "0febda23ec7cd555475d2ba117a4dd4c31aa71e9c5aeed445bd45feed31bee76"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ir/PpcTranslator.kt",
+      "size_bytes": 6992,
+      "sha256": "8d68e49eb8fcdeb04912056d19e6bf4f1ba646a774453f67ca2a6a0e1817e5f0"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/job/Job.kt",
+      "size_bytes": 5927,
+      "sha256": "a4966d56cd1ecba96d46bcf1523d1c953905eb5dc2a6ce4076b46d2dd2590793"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/library/JobStore.kt",
+      "size_bytes": 6266,
+      "sha256": "0e9ad3167e1d7a3c6c3e562be499204033d97579c3396a0a48ca7907df0cc146"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/library/SourceLibrary.kt",
+      "size_bytes": 9966,
+      "sha256": "a235494e46b0e465c689639509cf528d0a96b9950ae90c218354b7fbdc9f78e1"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ppc/GuestMachine.kt",
+      "size_bytes": 4912,
+      "sha256": "5ed08ec29e175ba0815670e28cdc1a9a4a61f44f5bb36f37cf2af2d2bebe0321"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ppc/PpcAsm.kt",
+      "size_bytes": 4161,
+      "sha256": "11c8d85c7ef570e555716e55641d34ad14b9cd80680319e04212976cb8a807ab"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ppc/PpcDecoder.kt",
+      "size_bytes": 5380,
+      "sha256": "c07b16803c330804adab16ad7e2f0f02140ad78995ff274d3fd20574460e0d75"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/ppc/PpcInterpreter.kt",
+      "size_bytes": 5659,
+      "sha256": "acb1762d255ab70c6cf25497c4e23cff8bf700ef885542277fb5fd8156b3937d"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/report/Report.kt",
+      "size_bytes": 10547,
+      "sha256": "c974a095e7d879ed6207524ee19b9e5b66ad0f23feab659da9fa3f603417701f"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/validation/Validation.kt",
+      "size_bytes": 2431,
+      "sha256": "f33404e4d8fc5b564d43824bfaf120ec4c44cc6cd510df43a43222286e4afbf4"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/xex/SourceAnalyzer.kt",
+      "size_bytes": 1571,
+      "sha256": "98f3d121adbd91f1692522a213550e0605eaa301777fc8aad21865545da7d61b"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/xex/XexHeaderProbe.kt",
+      "size_bytes": 6476,
+      "sha256": "9ee2238a6ebad578c1f76e4b3ff27febefdb875623e3ed5d1852f89a89c0ccb8"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/xex/XexIdentifiers.kt",
+      "size_bytes": 9441,
+      "sha256": "4e6306ed78a55cb0e69520c8ad8be1092a892cd0f60245443422302f470ea6bb"
+    },
+    {
+      "path": "core/src/main/kotlin/dev/console2android/core/xex/XexReferenceCheck.kt",
+      "size_bytes": 3584,
+      "sha256": "3309992fdde9c60e825ad2a610606f01e78a48af7eeae81e71b96c351ccf5698"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/DiagValidationTest.kt",
+      "size_bytes": 4853,
+      "sha256": "508fd7722a2d1a6536afa3bd2fdd2e2ece16d73ceef6fc2b88c5680a55be1f99"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/JobTest.kt",
+      "size_bytes": 5214,
+      "sha256": "a754aa0b9529b84fe28837d94a9552c420648b16ea12ee8d77b472fba0d3c773"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/PipelineTest.kt",
+      "size_bytes": 13568,
+      "sha256": "1ed8102210f1e72bab80d24de1c875a8405c13f4e8635e35b013b8712610e320"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/ReportTest.kt",
+      "size_bytes": 4025,
+      "sha256": "910410a7e4cbb17133a047669e06f6f25b72147dd074cece7a9ebc59504bc491"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/ir/DifferentialTest.kt",
+      "size_bytes": 9455,
+      "sha256": "69682e87405aebc3c71de49730bb8a9522f3d040903997f886157111d8d70c75"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/ir/IrTextTest.kt",
+      "size_bytes": 3755,
+      "sha256": "813679a97238340237ccfaf691567cca9f1e8e7330d0b4fc2ae3a07ceb16cf05"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/library/JobStoreTest.kt",
+      "size_bytes": 4116,
+      "sha256": "32c9458d33091a751430559f8b47ca9d4ba61fb93e7b2b9dfc0e50f05728399d"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/library/SourceLibraryTest.kt",
+      "size_bytes": 7591,
+      "sha256": "09751d5908cb11cebee4a47040ed7e6b4d5fec1bda48ef4713f1a0c6bb340893"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/ppc/PpcInterpreterTest.kt",
+      "size_bytes": 13114,
+      "sha256": "4d4ac337a7ecf088554b6162564f4a5f750fac53e7e945a1373f6377920539cd"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/xex/XexAnalysisTest.kt",
+      "size_bytes": 8361,
+      "sha256": "eeef99b9cbf5b9091515587dcf40f27f287a7cc38d55526c0fbc0c91cffd1a86"
+    },
+    {
+      "path": "core/src/test/kotlin/dev/console2android/core/xex/XexIdentifiersTest.kt",
+      "size_bytes": 5620,
+      "sha256": "8788d3bc3a38a223944c58cf13c4517954e82bd5894c948e0456ea564a9093a5"
+    },
+    {
+      "path": "docs/DIAGNOSTICS_AND_REPORTS.md",
+      "size_bytes": 2212,
+      "sha256": "ffe1f369b7954af4c3cb1b167cd63dc20216edd7824d440e2cc4ab7830420205"
+    },
+    {
+      "path": "docs/FX1_PIPELINE.md",
+      "size_bytes": 3576,
+      "sha256": "ad4fba693467177b15364dbb288cb007f75d57e915beb5aa85629681c074d4f7"
+    },
+    {
+      "path": "docs/GRAPHICS_INPUT_UI.md",
+      "size_bytes": 1976,
+      "sha256": "af58d4f34b55f80d234287d4ae46e0c29bab9be4bbe47261a45de7e2a63e01cf"
+    },
+    {
+      "path": "docs/LEGAL_AND_DEPENDENCIES.md",
+      "size_bytes": 2385,
+      "sha256": "333c6d26bf6fe994f5315e90220238b0c2c9271d5affc5169901463726d4edf4"
+    },
+    {
+      "path": "docs/LIBRARY_AND_JOBS.md",
+      "size_bytes": 1932,
+      "sha256": "4b008330411914e891466ad88e298115b3ccc721049f67fe93685885f5224dd2"
+    },
+    {
+      "path": "docs/PHASE0_DEPENDENCY_AUDIT.md",
+      "size_bytes": 4054,
+      "sha256": "38c9bf2bb2a10184a87f467757e7d389cdf44d2ec5a725f05158282451e62ace"
+    },
+    {
+      "path": "docs/PHASE0_POC_PROPOSAL.md",
+      "size_bytes": 1825,
+      "sha256": "4e6a830d554d779d8a507ff4e2df6edbed9d63431a120e276a01e7b460e94def"
+    },
+    {
+      "path": "docs/RECOVERY_CACHE_RUNTIME.md",
+      "size_bytes": 2347,
+      "sha256": "6c4ee90acd4a0df0d069884b5236780fa2345fa56cb39533dba059f1723da358"
+    },
+    {
+      "path": "docs/XEX_IDENTIFIERS.md",
+      "size_bytes": 2022,
+      "sha256": "7c291bcc35bff32c28f8b32ff045daabf7838b6c5c5b7cd212e3dd1698806a66"
+    },
+    {
+      "path": "docs/dependencies.json",
+      "size_bytes": 2741,
+      "sha256": "458da02b86eddab127d1dfd75e2539cc4459a2592af943d471fe69d4baa82f59"
+    },
+    {
+      "path": "gradle/libs.versions.toml",
+      "size_bytes": 1352,
+      "sha256": "e4c520c378df7a01b05655feafdbdb238e7070dfaa85f140d81672562a18d06c"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.jar",
+      "size_bytes": 43764,
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.properties",
+      "size_bytes": 250,
+      "sha256": "3d91f0932da99885c41e9dc4e85c9f9a2d3bfef4f0ad87473014dc0827a94884"
+    },
+    {
+      "path": "tools/preflight.py",
+      "size_bytes": 8824,
+      "sha256": "7b4a17918063f111af960b7016fad0541f428459bbd86cbe65078240834bb2a1"
+    },
+    {
+      "path": "tools/update_manifest.py",
+      "size_bytes": 1820,
+      "sha256": "604c069c3ee644c031ba89c17bb5861ce533873edd746af0d57b1c42249d2f23"
+    }
+  ]
+}
