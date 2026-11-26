@@ -91,7 +91,7 @@
     {
       "path": ".github/workflows/android-ci.yml",
       "size_bytes": 4229,
-      "sha256": "76b5fcc5103786a98340d6c72569f8dc56727b738f8b5ce6482d568207a0989d"
+      "sha256": "dc0c2b5ac9f9a6fd165239a4fcdb9792c4e5d3ce157f1ac8d280c769536037c9"
     },
     {
       "path": "app/build.gradle.kts",
